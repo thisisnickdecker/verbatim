@@ -14,7 +14,7 @@
     "tool": "Verbatim",
     "toolVersion": "0.1.0",
     "method": "rendered page (DOM) read with scroll sweep",
-    "durationMs": 87
+    "durationMs": 79
   },
   "stats": {
     "messageCount": 6,
@@ -130,7 +130,7 @@
     "hiddenViewsIgnored": 0,
     "foreignMessages": 0,
     "streaming": false,
-    "durationMs": 87
+    "durationMs": 79
   },
   "messages": [
     {

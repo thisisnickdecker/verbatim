@@ -26,7 +26,7 @@
     try {
       const handle = await window.showDirectoryPicker({ id: 'verbatim-save-folder', mode: 'readwrite' });
       await F.setFolder(handle);
-      say(`Captures will be saved to “${handle.name}”.`);
+      say(`Captures will be saved to “${handle.name}”. If Chrome later asks again, choose “Allow on every visit” so it remembers.`);
     } catch (err) {
       if (err.name !== 'AbortError') say(`Couldn't use that folder: ${err.message}`);
     }
@@ -36,7 +36,7 @@
   $('approve').addEventListener('click', async () => {
     const handle = await F.getFolder();
     const state = handle && (await handle.requestPermission({ mode: 'readwrite' }));
-    say(state === 'granted' ? 'Access allowed. Captures will be saved there again.' : 'Access was not allowed.');
+    say(state === 'granted' ? 'Access allowed. Captures will be saved there again. (If Chrome offered “Allow on every visit”, it won’t ask again.)' : 'Access was not allowed.');
     render();
   });
 

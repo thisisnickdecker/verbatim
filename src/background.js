@@ -101,7 +101,9 @@ async function saveToChosenFolder(files) {
   }
   if (!handle) return { saved: false };
   if ((await CC.saveFolder.permission(handle)) !== 'granted') {
-    return { saved: false, reason: `(“${handle.name}” needs your OK again: right-click the Verbatim icon → Options.)` };
+    // Only a page can ask Chrome for access again, so open Options for a one-click fix.
+    chrome.runtime.openOptionsPage();
+    return { saved: false, reason: `(“${handle.name}” needs your OK again. Verbatim opened its Options tab: click “Allow access again” and choose “Allow on every visit”.)` };
   }
   try {
     const out = await CC.saveFolder.writeFiles(handle, files);
