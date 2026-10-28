@@ -1,0 +1,250 @@
+{
+  "schema": "conversation-capture/v1",
+  "title": "Example: formatting, code and images",
+  "source": {
+    "platform": "chatgpt",
+    "platformName": "ChatGPT",
+    "url": "https://chatgpt.com/c/6ae0b249-6f9c-83e9-9f15-a65b8f99010f",
+    "conversationId": "6ae0b249-6f9c-83e9-9f15-a65b8f99010f"
+  },
+  "capture": {
+    "capturedAt": "2026-10-27T18:00:00.000Z",
+    "tool": "Conversation Capture",
+    "toolVersion": "0.1.0",
+    "method": "rendered-page (DOM) read with scroll sweep",
+    "durationMs": 85
+  },
+  "stats": {
+    "messageCount": 6,
+    "turnCount": 3,
+    "userMessages": 3,
+    "assistantMessages": 3,
+    "otherMessages": 0,
+    "codeBlocks": 2,
+    "images": 3,
+    "files": 1
+  },
+  "completeness": {
+    "status": "verified",
+    "summary": "All 6 messages on the displayed conversation path were captured; every completeness check passed.",
+    "checks": [
+      {
+        "id": "scroll_container",
+        "label": "Conversation scroll container found",
+        "result": "pass",
+        "detail": "Located the scrolling message list.",
+        "required": true
+      },
+      {
+        "id": "reached_top",
+        "label": "Reached the start of the conversation",
+        "result": "pass",
+        "detail": "Scrolled to the top and waited until no older messages loaded.",
+        "required": true
+      },
+      {
+        "id": "reached_bottom",
+        "label": "Reached the end of the conversation",
+        "result": "pass",
+        "detail": "Scrolled to the bottom of the message list.",
+        "required": true
+      },
+      {
+        "id": "matches_page",
+        "label": "Messages belong to the conversation in the address bar",
+        "result": "pass",
+        "detail": "Read only the visible conversation.",
+        "required": true
+      },
+      {
+        "id": "continuous_sweep",
+        "label": "No gaps between scroll snapshots",
+        "result": "pass",
+        "detail": "Each of 9 overlapping snapshots shared at least one turn with the previous ones.",
+        "required": true
+      },
+      {
+        "id": "turns_rendered",
+        "label": "Every turn was fully rendered when read",
+        "result": "pass",
+        "detail": "All 3 turns reported a complete render state.",
+        "required": true
+      },
+      {
+        "id": "no_empty_messages",
+        "label": "No empty messages",
+        "result": "pass",
+        "detail": "Every message has text or an attachment.",
+        "required": true
+      },
+      {
+        "id": "no_truncated_messages",
+        "label": "No message left collapsed (\"Show more\")",
+        "result": "pass",
+        "detail": "0 collapsed message(s) were expanded before reading.",
+        "required": true
+      },
+      {
+        "id": "roles_identified",
+        "label": "Every message has a known role",
+        "result": "pass",
+        "detail": "All messages are user or assistant (or tool/system).",
+        "required": true
+      },
+      {
+        "id": "not_streaming",
+        "label": "No response was still being generated",
+        "result": "pass",
+        "detail": "No stop-generation control was visible.",
+        "required": true
+      },
+      {
+        "id": "no_timeout",
+        "label": "Capture finished within its time limit",
+        "result": "pass",
+        "detail": "Finished in 0 s.",
+        "required": true
+      }
+    ],
+    "warnings": [
+      "Some responses include collapsed reasoning (\"Thought for …\"). Reasoning text is not captured.",
+      "1 uploaded image(s) are only listed: ChatGPT displays them from temporary in-browser links, so no lasting URL exists. Keep the originals separately.",
+      "3 image(s) are recorded as URL references only; the image files were not downloaded and their URLs may require sign-in or expire.",
+      "File attachments are recorded by name only (detected heuristically); file contents were not captured.",
+      "Completeness is judged from the rendered page. ChatGPT does not display a total message count, so the check confirms a continuous top-to-bottom read, not a count match."
+    ]
+  },
+  "evidence": {
+    "layout": "current",
+    "scrollerFound": true,
+    "reachedTop": true,
+    "reachedBottom": true,
+    "snapshots": 9,
+    "gapCount": 0,
+    "emptySnapshots": 0,
+    "olderTurnsAppearedDuringSweep": 0,
+    "timedOut": false,
+    "expandedMessages": 0,
+    "hiddenViewsIgnored": 0,
+    "foreignMessages": 0,
+    "streaming": false,
+    "durationMs": 85
+  },
+  "messages": [
+    {
+      "index": 1,
+      "turnIndex": 1,
+      "role": "user",
+      "platformRole": "user",
+      "platformMessageId": "u1",
+      "content": {
+        "format": "markdown",
+        "markdown": "Can you show me a Python example and a shell command?\nKeep it short.",
+        "text": "Can you show me a Python example and a shell command?\nKeep it short."
+      },
+      "attachments": [],
+      "codeBlockCount": 0,
+      "flags": []
+    },
+    {
+      "index": 2,
+      "turnIndex": 1,
+      "role": "assistant",
+      "platformRole": "assistant",
+      "platformMessageId": "a1",
+      "content": {
+        "format": "markdown",
+        "markdown": "## Two snippets\n\nHere is `fib()` in Python:\n\n```python\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n```\n\n````text\necho \"`backticks` and ```fences```\"\n````",
+        "text": "Two snippets\n        Here is fib() in Python:\n        \n          Python\n            \n          def fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n        \n        \n          Plain text\n          echo \"`backticks` and ```fences```\""
+      },
+      "attachments": [],
+      "codeBlockCount": 2,
+      "flags": []
+    },
+    {
+      "index": 3,
+      "turnIndex": 2,
+      "role": "user",
+      "platformRole": "user",
+      "platformMessageId": "u2",
+      "content": {
+        "format": "markdown",
+        "markdown": "Now show every kind of formatting.",
+        "text": "Now show every kind of formatting."
+      },
+      "attachments": [],
+      "codeBlockCount": 0,
+      "flags": []
+    },
+    {
+      "index": 4,
+      "turnIndex": 2,
+      "role": "assistant",
+      "platformRole": "assistant",
+      "platformMessageId": "a2",
+      "content": {
+        "format": "markdown",
+        "markdown": "# Formatting\n\nPlain, **bold by style**, **strong**, *em*, ~~gone~~, and a [link](https://example.com/a(b%29).\n\n- One\n  - One.a\n  - One.b\n- Two\n\n3. Third\n4. Fourth\n\n> Quoted line\n\n| Name | Value |\n| --- | --- |\n| a\\|b | 1 |\n\n---\n\nInside a card\n\n- [x] Done item\n\n- [ ] Open item\n\nSource [Example Docs: Page](https://docs.example.com/x)\n\n# Brief\n\n- keep this **exact** markdown",
+        "text": "Formatting\n        Plain, bold by style, strong, em, gone, and a link.\n        OneOne.aOne.bTwo\n        ThirdFourth\n        Quoted line\n        NameValuea|b1\n        \n        Inside a card\n          Done item\n          Open item\n        \n        Source Example Docs\n        rendered brief"
+      },
+      "attachments": [],
+      "codeBlockCount": 0,
+      "flags": []
+    },
+    {
+      "index": 5,
+      "turnIndex": 3,
+      "role": "user",
+      "platformRole": "user",
+      "platformMessageId": "u3",
+      "content": {
+        "format": "markdown",
+        "markdown": "Here are my notebook photos and the PDF.",
+        "text": "Here are my notebook photos and the PDF."
+      },
+      "attachments": [
+        {
+          "type": "image",
+          "url": "https://files.example/notebook-01.jpg",
+          "alt": "Uploaded image"
+        },
+        {
+          "type": "image",
+          "url": null,
+          "sessionUrl": "blob:https://chatgpt.com/0b1c2d3e-0000-4000-8000-000000000000",
+          "alt": "User attachment",
+          "note": "session-only"
+        },
+        {
+          "type": "file",
+          "name": "workshop-notes.pdf"
+        }
+      ],
+      "codeBlockCount": 0,
+      "flags": []
+    },
+    {
+      "index": 6,
+      "turnIndex": 3,
+      "role": "assistant",
+      "platformRole": "assistant",
+      "platformMessageId": "a3",
+      "content": {
+        "format": "markdown",
+        "markdown": "Here is a reference image:\n\nSources\n\n![Notebook spread](https://images.example/spread.png)",
+        "text": "Here is a reference image:\n        Sources"
+      },
+      "attachments": [
+        {
+          "type": "image",
+          "url": "https://images.example/spread.png",
+          "alt": "Notebook spread"
+        }
+      ],
+      "codeBlockCount": 0,
+      "flags": [
+        "collapsed-reasoning-not-captured"
+      ]
+    }
+  ]
+}

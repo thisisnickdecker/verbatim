@@ -1,0 +1,18 @@
+{
+  "name": "conversation-capture",
+  "version": "0.1.1",
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node --test test/capture.test.js"
+  },
+  "license": "UNLICENSED",
+  "description": "Chrome extension: export ChatGPT conversations to Markdown and JSON",
+  "devDependencies": {
+    "jsdom": "^24.1.3",
+    "terser": "^5.51.2"
+  },
+  "private": true
+}
