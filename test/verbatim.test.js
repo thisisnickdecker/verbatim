@@ -166,3 +166,47 @@ test('files: local-time folder, title-based names, three files per conversation'
   assert.ok(files[2].filename.endsWith('Spreadsheet Art Books — handoff.md'));
   for (const f of files) assert.ok(!/[:*?"<>|]/.test(f.filename), 'no characters Chrome rejects');
 });
+
+// ---------- save folder ----------
+
+// Minimal in-memory stand-in for a FileSystemDirectoryHandle.
+function memoryFolder(name) {
+  const entries = new Map();
+  return {
+    name,
+    entries,
+    async getDirectoryHandle(n, opts) {
+      if (!entries.has(n)) {
+        if (!opts || !opts.create) throw Object.assign(new Error('not found'), { name: 'NotFoundError' });
+        entries.set(n, memoryFolder(n));
+      }
+      return entries.get(n);
+    },
+    async getFileHandle(n) {
+      return {
+        async createWritable() {
+          let text = '';
+          return { async write(t) { text += t; }, async close() { entries.set(n, text); } };
+        },
+      };
+    },
+  };
+}
+
+test('save folder: files land in a dated subfolder, never overwriting', async () => {
+  const { conv, page } = await capture({ turns: simpleTurns(1), title: 'Folder test' });
+  page.window.eval(require('fs').readFileSync(require('path').join(__dirname, '..', 'src/settings/folder.js'), 'utf8'));
+  const F = page.CC.saveFolder;
+  const files = page.CC.exporters.filesFor(conv);
+  const vault = memoryFolder('Conversation Capture');
+
+  const first = await F.writeFiles(vault, files);
+  const sub = files[0].filename.split('/')[1];
+  assert.equal(first.folder, 'Conversation Capture');
+  assert.equal(first.subfolder, sub);
+  assert.deepEqual([...vault.entries.get(sub).entries.keys()], ['Folder test.md', 'Folder test.json', 'Folder test — handoff.md']);
+  assert.equal(vault.entries.get(sub).entries.get('Folder test.md'), files[0].text);
+
+  const second = await F.writeFiles(vault, files);
+  assert.equal(second.subfolder, `${sub} (2)`, 'a second capture in the same minute gets its own folder');
+});

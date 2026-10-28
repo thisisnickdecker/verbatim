@@ -2,10 +2,11 @@
  * Background service worker.
  *  - On toolbar click, injects the capture scripts into the active tab
  *    (activeTab grant: only that tab, only on click).
- *  - Receives the normalized capture and saves its files with chrome.downloads.
+ *  - Receives the normalized capture and saves its files into the folder chosen
+ *    in settings, or with chrome.downloads to Downloads/Verbatim.
  *    Nothing is sent anywhere else.
  */
-importScripts('core/enrich.js', 'core/exporters.js');
+importScripts('core/enrich.js', 'core/exporters.js', 'settings/folder.js');
 
 const CC = globalThis.ConversationCapture;
 
@@ -69,12 +70,44 @@ async function saveResult(tabId, result) {
     return;
   }
   const capture = result.capture;
+  const files = CC.exporters.filesFor(capture);
+  let where;
   try {
-    for (const f of CC.exporters.filesFor(capture)) await download(f.filename, f.mime, f.text);
-    badge(tabId, ...(STATUS_BADGE[capture.completeness.status] || ['?', '#b45309']));
+    where = await saveToChosenFolder(files);
+    if (!where.saved) {
+      for (const f of files) await download(f.filename, f.mime, f.text);
+      where.label = 'Downloads/Verbatim' + (where.reason ? `\n${where.reason}` : '');
+    }
   } catch (err) {
     badge(tabId, 'ERR', '#b91c1c');
     await notifyInPage(tabId, 'Verbatim could not save files:\n' + err.message, 'error');
+    return;
+  }
+  const c = capture.completeness;
+  badge(tabId, ...(STATUS_BADGE[c.status] || ['?', '#b45309']));
+  const what = capture.kind === 'page' ? `Page saved (${capture.stats.words} words).` : `${capture.stats.messageCount} messages saved, plus a handoff file.`;
+  const tone = c.status === 'verified' || c.status === 'captured' ? 'ok' : c.status === 'unverified' ? 'warn' : 'error';
+  await notifyInPage(tabId, `Verbatim — ${c.status.toUpperCase()}\n${what}\n${c.summary}\nSaved to ${where.label}`, tone);
+}
+
+// Save into the folder chosen in settings, if there is one and Chrome still
+// allows access. Otherwise report why, so the caller falls back to Downloads.
+async function saveToChosenFolder(files) {
+  let handle;
+  try {
+    handle = await CC.saveFolder.getFolder();
+  } catch (_) {
+    return { saved: false };
+  }
+  if (!handle) return { saved: false };
+  if ((await CC.saveFolder.permission(handle)) !== 'granted') {
+    return { saved: false, reason: `(“${handle.name}” needs your OK again: right-click the Verbatim icon → Options.)` };
+  }
+  try {
+    const out = await CC.saveFolder.writeFiles(handle, files);
+    return { saved: true, label: `“${out.folder}” › ${out.subfolder}` };
+  } catch (err) {
+    return { saved: false, reason: `(Couldn't write to “${handle.name}”: ${err.message})` };
   }
 }
 

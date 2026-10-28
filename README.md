@@ -16,7 +16,7 @@ Click the toolbar button and Verbatim picks the right mode from the page you're 
 | Claude.ai conversation | same three files | Same, plus a count check against Claude's own "Message N of TOTAL" |
 | Any other web page | `Title.md`, `Title.json` | Main content found (Readability), navigation and cookie banners removed |
 
-Files are saved to `Downloads/Verbatim/<date> <time> <source> — <title>/`.
+Files are saved to `Downloads/Verbatim/<date> <time> <source> — <title>/`, or straight into a folder you choose, such as your Obsidian vault (see **Save folder** below).
 
 **Every conversation export includes:**
 
@@ -40,6 +40,12 @@ Everything is computed locally with plain code: no AI calls, no API keys, nothin
 
 After updating the code, click the reload ↻ icon on the extension's card.
 
+### Save folder (optional)
+
+Right-click the Verbatim icon → **Options** → **Choose folder…** and pick a folder, for example one inside your Obsidian vault. Every capture is then written there, one dated subfolder per capture. Use **Save a test file** to confirm it works.
+
+Chrome may ask you to re-allow access later, for example after it restarts. Until you do, captures fall back to `Downloads/Verbatim` and the capture panel says so. Click **Allow access again** in Options to switch back.
+
 ## Use
 
 Open a conversation or page and click **Verbatim**. For conversations, keep the tab in front and don't scroll until the panel says it's done. A long conversation takes a few minutes, because Verbatim reads the whole thread.
@@ -52,9 +58,9 @@ Badge: **OK** = verified (or page captured) · **?** = couldn't be verified · *
 | --- | --- |
 | `activeTab` | Read the current tab, only when you click. No standing access to any site. |
 | `scripting` | Run the capture code in that tab on click. |
-| `downloads` | Save the files. |
+| `downloads` | Save the files to Downloads when no save folder is chosen. |
 
-There are no host permissions, no network requests, no remote code, and no analytics. It doesn't call ChatGPT's or Claude's internal APIs and doesn't read cookies or tokens. Capture code runs in Chrome's isolated extension context, out of reach of the page's own scripts.
+The optional save folder uses Chrome's standard folder picker: Verbatim can only write inside the one folder you pick. There are no host permissions, no network requests, no remote code, and no analytics. It doesn't call ChatGPT's or Claude's internal APIs and doesn't read cookies or tokens. Capture code runs in Chrome's isolated extension context, out of reach of the page's own scripts.
 
 ## How "verified" works
 
@@ -73,7 +79,8 @@ There are no host permissions, no network requests, no remote code, and no analy
 ```
 manifest.json
 src/
-  background.js            toolbar click → inject → save files
+  background.js            toolbar click → inject → save to chosen folder or Downloads
+  settings/                options page + save-folder storage and writer
   content/run-capture.js   in-page entry: pick adapter, run, normalize, progress panel
   platforms/
     chatgpt.js             ChatGPT adapter (selectors, scroll sweep, stitching)
@@ -87,7 +94,7 @@ src/
     enrich.js              outline, word split, links, questions (no AI)
     exporters.js           Markdown, JSON, handoff, file names
   vendor/Readability.js    Mozilla Readability 0.5.0 (Apache-2.0)
-test/                      27 tests on simulated ChatGPT, Claude and web pages
+test/                      29 tests on simulated ChatGPT, Claude and web pages
 ```
 
 Data flow: **page → adapter (raw capture) → normalize + completeness + enrich → exporters → downloads.** To add a platform, write one adapter file and register it. Nothing else changes.
@@ -108,7 +115,8 @@ The tests run the real extension code against simulated pages that reproduce Cha
 - **Web pages are read as shown.** Content that loads on scroll or sits behind tabs may be missing. Very app-like pages may convert with some layout text.
 - **Keep the tab in front during conversation captures.** Chrome throttles background tabs.
 - **The handoff condenses AI replies mechanically:** headings, first sentences, the first few list items. Your own messages are never shortened.
-- If Chrome is set to "Ask where to save each file," you'll get one dialog per file.
+- If Chrome is set to "Ask where to save each file," Downloads saves show one dialog per file. Choosing a save folder avoids this.
+- Don't point `Downloads/Verbatim` at another folder with a symlink: Chrome won't save through it. Use the save folder setting instead.
 
 ## License
 

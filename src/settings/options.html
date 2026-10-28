@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verbatim settings</title>
+  <style>
+    :root { --ink: #141416; --paper: #f6f2e8; --muted: #6b6a66; --line: #ddd7c8; --green: #16a34a; --amber: #b45309; --red: #b91c1c; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink: #f2efe7; --paper: #18181a; --muted: #a3a09a; --line: #34332f; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+    main { max-width: 640px; margin: 0 auto; padding: 48px 16px; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+    header img { width: 40px; height: 40px; }
+    h1 { font: 600 22px/1.2 Georgia, serif; margin: 0; }
+    h2 { font-size: 15px; margin: 0 0 4px; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    section { border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+    .current { display: flex; align-items: center; gap: 10px; margin: 16px 0; padding: 12px 14px; border-radius: 8px; background: color-mix(in srgb, var(--line) 40%, transparent); font-weight: 500; overflow-wrap: anywhere; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--muted); }
+    .dot.ok { background: var(--green); } .dot.warn { background: var(--amber); } .dot.err { background: var(--red); }
+    .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+    button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+    button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    button[hidden] { display: none; }
+    #message { min-height: 1.5em; margin-top: 12px; color: var(--muted); }
+    .hint { font-size: 13px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img src="../../icons/icon128.png" alt="">
+      <h1>Verbatim settings</h1>
+    </header>
+
+    <section>
+      <h2>Save captures to</h2>
+      <p>Choose a folder, such as a folder in your Obsidian vault, and every capture is saved straight into it. Without one, captures go to <strong>Downloads/Verbatim</strong>.</p>
+
+      <div class="current"><span class="dot" id="dot"></span><span id="current">Checking…</span></div>
+
+      <div class="buttons">
+        <button class="primary" id="choose">Choose folder…</button>
+        <button id="approve" hidden>Allow access again</button>
+        <button id="test" hidden>Save a test file</button>
+        <button id="reset" hidden>Use Downloads instead</button>
+      </div>
+      <div id="message" role="status"></div>
+
+      <p class="hint">Chrome can ask you to re-allow access to the folder, for example after it restarts. Until you do, captures are saved to Downloads/Verbatim, and the capture panel tells you so. Nothing is ever lost.</p>
+    </section>
+  </main>
+  <script src="folder.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

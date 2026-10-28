@@ -57,11 +57,8 @@
       const capture = NS.normalize(raw, meta);
       const c = capture.completeness;
       const what = capture.kind === 'page' ? `Page saved (${capture.stats.words} words).` : `${capture.stats.messageCount} messages saved, plus a handoff file.`;
-      NS.showPanel(
-        `Verbatim — ${c.status.toUpperCase()}\n${what}\n${c.summary}`,
-        c.status === 'verified' || c.status === 'captured' ? 'ok' : c.status === 'unverified' ? 'warn' : 'error',
-        12000
-      );
+      // The background worker replaces this with the final message once the files are saved.
+      NS.showPanel(`Verbatim\n${what.replace(' saved', ' read')}\nSaving…`);
       return { capture };
     } catch (err) {
       NS.showPanel('Verbatim failed:\n' + (err && err.message), 'error', 12000);
