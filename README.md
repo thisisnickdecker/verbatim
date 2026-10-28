@@ -40,7 +40,17 @@ Everything is computed locally with plain code: no AI calls, no API keys, nothin
 
 After updating the code, click the reload ↻ icon on the extension's card.
 
-### Save folder (optional)
+### Save straight to a folder, e.g. your Obsidian vault (optional, recommended)
+
+Install the small save helper once. Chrome hands each capture to it, and it writes the files into the folder you name:
+
+```bash
+native/install.sh <extension-id> "/path/to/your/vault/Conversation Capture"
+```
+
+The extension ID is shown on Verbatim's card in `chrome://extensions`. Reload Verbatim afterwards. The helper is a short Python script (`native/verbatim_host.py`) that only accepts messages from your Verbatim install and only writes inside that folder. `native/uninstall.sh` removes it. Without it, captures go to `Downloads/Verbatim`.
+
+### Save folder in Options (experimental)
 
 Right-click the Verbatim icon → **Options** → **Choose folder…** and pick a folder, for example one inside your Obsidian vault. Every capture is then written there, one dated subfolder per capture. Use **Save a test file** to confirm it works.
 
@@ -59,6 +69,7 @@ Badge: **OK** = verified (or page captured) · **?** = couldn't be verified · *
 | `activeTab` | Read the current tab, only when you click. No standing access to any site. |
 | `scripting` | Run the capture code in that tab on click. |
 | `downloads` | Save the files to Downloads when no save folder is chosen. |
+| `nativeMessaging` | Talk to the optional save helper, if you installed it. Does nothing otherwise. |
 
 The optional save folder uses Chrome's standard folder picker: Verbatim can only write inside the one folder you pick. There are no host permissions, no network requests, no remote code, and no analytics. It doesn't call ChatGPT's or Claude's internal APIs and doesn't read cookies or tokens. Capture code runs in Chrome's isolated extension context, out of reach of the page's own scripts.
 
@@ -81,6 +92,7 @@ manifest.json
 src/
   background.js            toolbar click → inject → save to chosen folder or Downloads
   settings/                options page + save-folder storage and writer
+native/                    optional save helper (Chrome native messaging host) + installer
   content/run-capture.js   in-page entry: pick adapter, run, normalize, progress panel
   platforms/
     chatgpt.js             ChatGPT adapter (selectors, scroll sweep, stitching)
@@ -94,7 +106,7 @@ src/
     enrich.js              outline, word split, links, questions (no AI)
     exporters.js           Markdown, JSON, handoff, file names
   vendor/Readability.js    Mozilla Readability 0.5.0 (Apache-2.0)
-test/                      29 tests on simulated ChatGPT, Claude and web pages
+test/                      30 tests on simulated ChatGPT, Claude and web pages
 ```
 
 Data flow: **page → adapter (raw capture) → normalize + completeness + enrich → exporters → downloads.** To add a platform, write one adapter file and register it. Nothing else changes.

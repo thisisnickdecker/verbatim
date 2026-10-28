@@ -73,7 +73,12 @@ async function saveResult(tabId, result) {
   const files = CC.exporters.filesFor(capture);
   let where;
   try {
-    where = await saveToChosenFolder(files);
+    where = await saveWithHelper(files);
+    if (!where.saved) {
+      const helperReason = where.reason;
+      where = await saveToChosenFolder(files);
+      if (!where.saved && !where.reason) where.reason = helperReason;
+    }
     if (!where.saved) {
       for (const f of files) await download(f.filename, f.mime, f.text);
       where.label = 'Downloads/Verbatim' + (where.reason ? `\n${where.reason}` : '');
@@ -88,6 +93,27 @@ async function saveResult(tabId, result) {
   const what = capture.kind === 'page' ? `Page saved (${capture.stats.words} words).` : `${capture.stats.messageCount} messages saved, plus a handoff file.`;
   const tone = c.status === 'verified' || c.status === 'captured' ? 'ok' : c.status === 'unverified' ? 'warn' : 'error';
   await notifyInPage(tabId, `Verbatim — ${c.status.toUpperCase()}\n${what}\n${c.summary}\nSaved to ${where.label}`, tone);
+}
+
+// Save through the optional local helper (native/install.sh), which writes
+// straight into a folder such as an Obsidian vault. Not installed -> skip.
+const HELPER = 'com.thestudiolo.verbatim';
+
+function saveWithHelper(files) {
+  return new Promise((resolve) => {
+    let replied = false;
+    try {
+      chrome.runtime.sendNativeMessage(HELPER, { type: 'save', files: files.map((f) => ({ filename: f.filename, text: f.text })) }, (res) => {
+        replied = true;
+        const err = chrome.runtime.lastError;
+        if (err || !res) return resolve({ saved: false, helperMissing: true });
+        if (!res.ok) return resolve({ saved: false, reason: `(The save helper couldn't write: ${res.error})` });
+        resolve({ saved: true, label: `“${res.folder}” › ${res.subfolder}` });
+      });
+    } catch (_) {
+      if (!replied) resolve({ saved: false, helperMissing: true });
+    }
+  });
 }
 
 // Save into the folder chosen in settings, if there is one and Chrome still

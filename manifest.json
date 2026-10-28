@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Verbatim",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Save ChatGPT and Claude conversations, or any web page, as clean Markdown, verified complete. Runs entirely in your browser.",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
     "scripting",
-    "downloads"
+    "downloads",
+    "nativeMessaging"
   ],
   "background": {
     "service_worker": "src/background.js"

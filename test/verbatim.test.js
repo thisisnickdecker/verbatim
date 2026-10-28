@@ -210,3 +210,33 @@ test('save folder: files land in a dated subfolder, never overwriting', async ()
   const second = await F.writeFiles(vault, files);
   assert.equal(second.subfolder, `${sub} (2)`, 'a second capture in the same minute gets its own folder');
 });
+
+// ---------- local save helper (native messaging host) ----------
+
+test('save helper: writes into the configured folder, never overwrites, refuses escapes', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  const { execFileSync } = require('child_process');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'verbatim-'));
+  const vault = path.join(tmp, 'vault');
+  fs.mkdirSync(vault);
+  fs.writeFileSync(path.join(tmp, 'config.json'), JSON.stringify({ saveFolder: vault }));
+  const call = (msg) => {
+    const body = Buffer.from(JSON.stringify(msg));
+    const len = Buffer.alloc(4);
+    len.writeUInt32LE(body.length);
+    const out = execFileSync(path.join(__dirname, '..', 'native', 'verbatim_host.py'), {
+      input: Buffer.concat([len, body]),
+      env: { ...process.env, VERBATIM_CONFIG: path.join(tmp, 'config.json') },
+    });
+    return JSON.parse(out.subarray(4, 4 + out.readUInt32LE(0)).toString());
+  };
+  const files = [{ filename: 'Verbatim/2026-10-28 00-01 Claude — T/T.md', text: '# T' }];
+  assert.equal(call({ type: 'save', files }).subfolder, '2026-10-28 00-01 Claude — T');
+  assert.equal(call({ type: 'save', files }).subfolder, '2026-10-28 00-01 Claude — T (2)');
+  assert.equal(fs.readFileSync(path.join(vault, '2026-10-28 00-01 Claude — T', 'T.md'), 'utf8'), '# T');
+  assert.equal(call({ type: 'save', files: [{ filename: 'Verbatim/../x/y.md', text: '' }] }).ok, false);
+  assert.ok(!fs.existsSync(path.join(tmp, 'x')));
+  fs.rmSync(tmp, { recursive: true });
+});
