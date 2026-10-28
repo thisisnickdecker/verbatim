@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
+const { createYouTubePage, captureMedia: captureMediaRaw } = require('./fake-media');
 const { capture, simpleTurns } = require('./fake-chatgpt');
 
 // Values come from the jsdom realm; compare as plain data.
@@ -252,6 +253,10 @@ test('each URL goes to the right adapter', async () => {
   assert.equal(CC.findPlatform('chrome://extensions'), null);
 });
 
+async function captureMedia(page) {
+  return Object.assign(await captureMediaRaw(page), { page });
+}
+
 test('write example exports', async () => {
   const turns = RICH_TURNS.map((t) => ({ ...t }));
   const { conv, page } = await capture({ turns, title: 'Example: formatting, code and images' });
@@ -263,4 +268,9 @@ test('write example exports', async () => {
     fs.writeFileSync(path.join(dir, name), f.text);
   }
   JSON.parse(fs.readFileSync(path.join(dir, 'example-conversation.json'), 'utf8'));
+
+  const segments = Array.from({ length: 40 }, (_, i) => ({ start: i * 8, text: i % 3 === 2 ? `That is the point we keep coming back to, number ${i + 1}.` : `and the brief changes again when the client sees part ${i + 1}` }));
+  const chapters = [{ start: 0, title: 'Chapter 1: Where the idea came from' }, { start: 160, title: 'Chapter 2: Shipping it' }];
+  const yt = await captureMedia(createYouTubePage({ segments, chapters, duration: 330, title: 'Example: a video transcript' }));
+  for (const f of yt.page.CC.exporters.filesFor(yt.tr)) fs.writeFileSync(path.join(dir, 'example-transcript' + path.extname(f.filename)), f.text);
 });

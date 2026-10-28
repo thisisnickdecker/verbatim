@@ -144,5 +144,62 @@
     return { status, summary, checks, warnings };
   }
 
-  NS.completeness = { assess, assessPage };
+  // Transcripts: the site's own transcript, judged by whether it covers the
+  // media from start to end. Allowed slack at either end: closing music,
+  // silence, an intro before the first words.
+  function assessTranscript(raw) {
+    const e = raw.evidence || {};
+    const segs = raw.segments;
+    const slack = e.durationSec ? Math.max(120, e.durationSec * 0.05) : 0;
+    const checks = [];
+
+    checks.push(check('transcript_found', `${raw.platformName} transcript found`,
+      segs.length ? 'pass' : 'fail',
+      segs.length ? `${segs.length} transcript segments read${e.panelOpened && raw.platform === 'youtube' ? ' from the "Show transcript" panel' : ''}.`
+        : e.panelFound ? 'The transcript section was found but held no readable lines.'
+          : `This ${raw.media.type} shows no transcript${raw.platform === 'spotify' ? ' (Spotify only shows transcripts to signed-in listeners, and not every episode has one)' : ''}.`));
+
+    checks.push(check('matches_page', `Transcript belongs to the ${raw.media.type} in the address bar`,
+      e.idMatches === false ? 'fail' : e.idMatches ? 'pass' : 'unknown',
+      e.idMatches === false ? 'The page was showing a different video than the address bar.'
+        : e.idMatches ? `Read from the page for ${raw.mediaId}.` : 'Could not confirm which video the page was showing.'));
+
+    checks.push(check('settled', 'Transcript finished loading',
+      !segs.length ? 'unknown' : e.settled ? 'pass' : 'fail',
+      !segs.length ? 'Nothing to wait for.' : e.settled ? 'The number of lines stopped changing before reading.' : 'Lines were still appearing when the time limit ran out.'));
+
+    const startOk = e.firstSegmentSec != null && e.firstSegmentSec <= Math.max(60, slack);
+    checks.push(check('covers_start', 'Starts at the beginning',
+      e.firstSegmentSec == null ? 'unknown' : startOk ? 'pass' : 'fail',
+      e.firstSegmentSec == null ? 'No timestamps to check.' : startOk ? `First line at ${NS.transcript.clock(e.firstSegmentSec)}.`
+        : `First line is at ${NS.transcript.clock(e.firstSegmentSec)}; the opening may be missing.`));
+
+    const endKnown = e.lastSegmentSec != null && e.durationSec;
+    const endOk = endKnown && e.lastSegmentSec >= e.durationSec - slack;
+    checks.push(check('covers_end', 'Runs to the end',
+      !endKnown ? 'unknown' : endOk ? 'pass' : 'fail',
+      !endKnown ? (e.durationSec ? 'No timestamps to check.' : `${raw.platformName} did not show the length of this ${raw.media.type}, so the end could not be checked${raw.platform === 'spotify' ? ' (press play on this episode first to make the length visible)' : ''}.`)
+        : endOk ? `Last line at ${NS.transcript.clock(e.lastSegmentSec)} of ${NS.transcript.clock(e.durationSec)}.`
+          : `Last line is at ${NS.transcript.clock(e.lastSegmentSec)} but the ${raw.media.type} runs ${NS.transcript.clock(e.durationSec)}; the end may be missing.`));
+
+    const warnings = [
+      `This is ${raw.platformName}'s own transcript, usually machine-generated: expect misheard words and missing punctuation. Check quotes against the audio before citing them.`,
+    ];
+    warnings.push(segs.some((s) => s.speaker)
+      ? `Speaker labels are ${raw.platformName}'s guesses ("Speaker 1", "Speaker 2"), not names, and can be wrong.`
+      : 'Speakers are not labelled; the transcript does not say who is talking.');
+    if (raw.platform === 'youtube') warnings.push('Words YouTube masks as profanity appear as "[ __ ]".');
+
+    const required = checks.filter((c) => c.required);
+    const status = required.some((c) => c.result === 'fail') ? 'incomplete'
+      : required.some((c) => c.result === 'unknown') ? 'unverified' : 'verified';
+    const summary = {
+      verified: `The whole transcript was captured (${segs.length} segments, start to end).`,
+      unverified: `Captured ${segs.length} transcript segments, but full coverage could not be confirmed (see checks marked "unknown").`,
+      incomplete: segs.length ? 'This transcript is known to be missing content (see checks marked "fail").' : 'No transcript was captured.',
+    }[status];
+    return { status, summary, checks, warnings };
+  }
+
+  NS.completeness = { assess, assessPage, assessTranscript };
 })(globalThis);

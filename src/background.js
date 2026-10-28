@@ -6,7 +6,7 @@
  *    in settings, or with chrome.downloads to Downloads/Verbatim.
  *    Nothing is sent anywhere else.
  */
-importScripts('core/enrich.js', 'core/exporters.js', 'settings/folder.js');
+importScripts('core/enrich.js', 'core/transcript.js', 'core/exporters.js', 'settings/folder.js');
 
 const CC = globalThis.ConversationCapture;
 
@@ -15,10 +15,13 @@ const CONTENT_FILES = [
   'src/vendor/Readability.js',
   'src/core/html-to-markdown.js',
   'src/core/enrich.js',
+  'src/core/transcript.js',
   'src/core/completeness.js',
   'src/core/normalize.js',
   'src/platforms/chatgpt.js',
   'src/platforms/claude.js',
+  'src/platforms/youtube.js',
+  'src/platforms/spotify.js',
   'src/platforms/web.js',
   'src/platforms/registry.js',
   'src/content/run-capture.js',
@@ -90,7 +93,7 @@ async function saveResult(tabId, result) {
   }
   const c = capture.completeness;
   badge(tabId, ...(STATUS_BADGE[c.status] || ['?', '#b45309']));
-  const what = capture.kind === 'page' ? `Page saved (${capture.stats.words} words).` : `${capture.stats.messageCount} messages saved, plus a handoff file.`;
+  const what = CC.exporters.savedLine(capture);
   const tone = c.status === 'verified' || c.status === 'captured' ? 'ok' : c.status === 'unverified' ? 'warn' : 'error';
   await notifyInPage(tabId, `Verbatim — ${c.status.toUpperCase()}\n${what}\n${c.summary}\nSaved to ${where.label}`, tone);
 }

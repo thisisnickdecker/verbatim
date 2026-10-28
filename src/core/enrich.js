@@ -89,5 +89,13 @@
     };
   }
 
-  NS.enrich = { enrichConversation, enrichPage, words, oneLine };
+  function enrichTranscript(tr) {
+    return {
+      // Links usually live in the show notes, not the spoken words.
+      links: linksIn(tr.source.description || ''),
+      readingMinutes: Math.max(1, Math.round(tr.stats.words / 230)),
+    };
+  }
+
+  NS.enrich = { enrichConversation, enrichPage, enrichTranscript, words, oneLine };
 })(globalThis);

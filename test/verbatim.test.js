@@ -240,3 +240,154 @@ test('save helper: writes into the configured folder, never overwrites, refuses 
   assert.ok(!fs.existsSync(path.join(tmp, 'x')));
   fs.rmSync(tmp, { recursive: true });
 });
+
+// ---------- transcripts: YouTube and Spotify ----------
+
+const { createYouTubePage, createSpotifyPage, captureMedia } = require('./fake-media');
+
+function speech(n, every) {
+  const lines = [];
+  for (let i = 0; i < n; i++) lines.push({ start: i * (every || 9), text: i % 4 === 3 ? `Line ${i + 1} ends a thought.` : `line ${i + 1} keeps going and` });
+  return lines;
+}
+
+test('youtube: opens "Show transcript", reads every segment, chapters and metadata', async () => {
+  const segments = speech(400); // 0:00 .. 59:51
+  const chapters = [{ start: 0, title: 'Chapter 1: Why the dog became the mascot' }, { start: 9 * 200, title: 'Chapter 2: The rebrand' }];
+  const page = createYouTubePage({ segments, chapters, duration: 3600, title: 'Alli Peters: Dragging the Democrats Into a New Creative Era' });
+  const { tr, raw, platform } = await captureMedia(page);
+  assert.equal(platform.id, 'youtube');
+  assert.equal(raw.evidence.panelOpened, true);
+  assert.equal(tr.kind, 'transcript');
+  assert.equal(tr.stats.segments, 400);
+  assert.equal(tr.segments[399].start, 3591);
+  assert.equal(tr.title, 'Alli Peters: Dragging the Democrats Into a New Creative Era');
+  assert.equal(tr.source.show, 'The Creative Caucus');
+  assert.equal(tr.source.url, 'https://www.youtube.com/watch?v=FquRuBqglg4');
+  assert.equal(tr.source.durationSec, 3600);
+  assert.deepEqual(plain(tr.chapters.map((c) => c.start)), [0, 1800]);
+  assert.equal(tr.completeness.status, 'verified');
+
+  const md = page.CC.exporters.toMarkdown(tr);
+  assert.match(md, /^---\ntitle: "Alli Peters/);
+  assert.match(md, /channel: "The Creative Caucus"/);
+  assert.match(md, /duration: "1:00:00"/);
+  assert.match(md, /## Chapters\n\n- \[0:00\]\(https:\/\/www\.youtube\.com\/watch\?v=FquRuBqglg4&t=0s\) Chapter 1/);
+  assert.match(md, /### Chapter 2: The rebrand\n\n\*\*\[30:00\]\(https:\/\/www\.youtube\.com\/watch\?v=FquRuBqglg4&t=1800s\)\*\* line 201/);
+  assert.match(md, /## Links in the description\n\n- \[https:\/\/example\.com\/notes\]/);
+  // Paragraphs, not one line per caption.
+  const paras = page.CC.exporters.paragraphs(tr);
+  assert.ok(paras.length > 30 && paras.length < 100, `${paras.length} paragraphs`);
+  assert.ok(paras.every((p) => p.count >= 1));
+
+  const files = page.CC.exporters.filesFor(tr);
+  assert.deepEqual(plain(files.map((f) => f.filename.split('/').pop())), [
+    'Alli Peters Dragging the Democrats Into a New Creative Era.md',
+    'Alli Peters Dragging the Democrats Into a New Creative Era.json',
+  ]);
+  assert.match(files[0].filename, /^Verbatim\/\d{4}-\d\d-\d\d \d\d-\d\d YouTube — /);
+  assert.equal(page.CC.exporters.savedLine(tr), `Transcript saved (${tr.stats.words.toLocaleString('en-US')} words, 400 segments).`);
+});
+
+test('youtube: the older transcript panel layout is read too', async () => {
+  const page = createYouTubePage({ segments: speech(50, 10), duration: 500, legacy: true });
+  const { tr } = await captureMedia(page);
+  assert.equal(tr.stats.segments, 50);
+  assert.equal(tr.segments[1].text, 'line 2 keeps going and');
+  assert.equal(tr.completeness.status, 'verified');
+});
+
+test('youtube: a transcript that stops early is incomplete', async () => {
+  const page = createYouTubePage({ segments: speech(100), duration: 3600 }); // ends at 14:51
+  const { tr } = await captureMedia(page);
+  const end = tr.completeness.checks.find((c) => c.id === 'covers_end');
+  assert.equal(end.result, 'fail');
+  assert.match(end.detail, /Last line is at 14:51 but the video runs 1:00:00/);
+  assert.equal(tr.completeness.status, 'incomplete');
+});
+
+test('youtube: no transcript is reported, not claimed', async () => {
+  const page = createYouTubePage({ segments: [], duration: 300, noTranscript: true });
+  const { tr } = await captureMedia(page);
+  assert.equal(tr.stats.segments, 0);
+  assert.equal(tr.completeness.checks[0].result, 'fail');
+  assert.equal(tr.completeness.status, 'incomplete');
+  assert.match(page.CC.exporters.toMarkdown(tr), /_\(no transcript captured\)_/);
+});
+
+test('youtube: the page showing another video is caught', async () => {
+  const page = createYouTubePage({ segments: speech(10), duration: 90, shownId: 'zzzzzzzzzzz' });
+  const { tr } = await captureMedia(page);
+  assert.equal(tr.completeness.checks.find((c) => c.id === 'matches_page').result, 'fail');
+  assert.equal(tr.completeness.status, 'incomplete');
+});
+
+test('spotify: reads the Transcript section under its heading, with show and description', async () => {
+  const page = createSpotifyPage({ segments: speech(120, 15), playing: true, duration: 1800 });
+  const { tr, platform } = await captureMedia(page);
+  assert.equal(platform.id, 'spotify');
+  assert.equal(tr.stats.segments, 120);
+  assert.equal(tr.segments[0].text, 'line 1 keeps going and');
+  assert.equal(tr.title, 'Everyone sits in the same traffic now');
+  assert.equal(tr.source.show, 'New Creative Era');
+  assert.equal(tr.source.url, 'https://open.spotify.com/episode/5H3FXUgGf9hxqb6ZN2mjxu');
+  assert.match(tr.source.description, /next Steve Jobs/);
+  assert.equal(tr.completeness.status, 'verified');
+  const md = page.CC.exporters.toMarkdown(tr);
+  assert.match(md, /show: "New Creative Era"/);
+  assert.match(md, /\*\*0:00\*\* line 1 keeps going and/);
+  assert.ok(!md.includes('Show more'));
+});
+
+test('spotify: tabbed layout: opens the Transcript tab, keeps speakers and every paragraph', async () => {
+  const segments = [
+    { start: 0, text: 'Welcome to new creative era. | I\'m Joshua, joined as always by Yancey. | Yancey, it\'s good to see you again.' },
+    { start: 21, text: 'Good to be here. | We\'ve been away for a few months.', speaker: 'Speaker 2' },
+    { start: 35, text: 'Still me talking.', speaker: null },
+    { start: 3830, text: 'Thanks for listening.', speaker: 'Speaker 1' },
+  ];
+  const page = createSpotifyPage({ tabbed: true, segments, playing: true, duration: 3837 });
+  const { tr, raw } = await captureMedia(page);
+  assert.equal(raw.evidence.tabFound, true);
+  assert.equal(tr.stats.segments, 4);
+  // A timestamp row without a label continues the previous speaker.
+  assert.deepEqual(plain(tr.segments.map((s) => s.speaker)), ['Speaker 1', 'Speaker 2', 'Speaker 2', 'Speaker 1']);
+  // The whole description (after "Show more"), with its links, and not the comments below it.
+  assert.equal(tr.source.description, 'The builders of the internet wanted to be the next Steve Jobs.\n\nBuy a ticket to the show here (https://example.com/tickets).');
+  assert.equal(tr.segments[0].text, "Welcome to new creative era. I'm Joshua, joined as always by Yancey. Yancey, it's good to see you again.");
+  assert.ok(!tr.segments.some((s) => /generated automatically/.test(s.text)));
+  assert.equal(tr.completeness.status, 'verified');
+  assert.match(tr.completeness.warnings.join(' '), /Speaker labels are Spotify's guesses/);
+  const md = page.CC.exporters.toMarkdown(tr);
+  assert.match(md, /\*\*0:00 Speaker 1:\*\* Welcome to new creative era\./);
+  assert.match(md, /\*\*0:21 Speaker 2:\*\* Good to be here\./);
+  assert.match(md, /\*\*1:03:50 Speaker 1:\*\* Thanks for listening\./);
+});
+
+test('spotify: without the episode playing, the end cannot be checked', async () => {
+  const page = createSpotifyPage({ segments: speech(20, 15) });
+  const { tr } = await captureMedia(page);
+  assert.equal(tr.completeness.checks.find((c) => c.id === 'covers_end').result, 'unknown');
+  assert.equal(tr.completeness.status, 'unverified');
+});
+
+test('spotify: signed out (no transcript) says why', async () => {
+  const page = createSpotifyPage({});
+  const { tr } = await captureMedia(page);
+  assert.equal(tr.completeness.status, 'incomplete');
+  assert.match(tr.completeness.checks[0].detail, /signed-in listeners/);
+});
+
+test('transcripts: each URL goes to the right adapter', () => {
+  const { CC } = createSpotifyPage({});
+  assert.equal(CC.findPlatform('https://www.youtube.com/watch?v=FquRuBqglg4&pp=x').id, 'youtube');
+  assert.equal(CC.findPlatform('https://m.youtube.com/watch?v=FquRuBqglg4').id, 'youtube');
+  assert.equal(CC.findPlatform('https://www.youtube.com/live/FquRuBqglg4').id, 'youtube');
+  assert.equal(CC.findPlatform('https://www.youtube.com/results?search_query=x').id, 'web');
+  assert.equal(CC.findPlatform('https://open.spotify.com/episode/5H3FXUgGf9hxqb6ZN2mjxu?si=a2c').id, 'spotify');
+  assert.equal(CC.findPlatform('https://open.spotify.com/intl-de/episode/5H3FXUgGf9hxqb6ZN2mjxu').id, 'spotify');
+  assert.equal(CC.findPlatform('https://open.spotify.com/show/5H3FXUgGf9hxqb6ZN2mjxu').id, 'web');
+  assert.equal(CC.transcript.clock(3725), '1:02:05');
+  assert.equal(CC.transcript.parseClock('1:02:05'), 3725);
+  assert.equal(CC.transcript.parseIsoDuration('PT58M53S'), 3533);
+});

@@ -2,7 +2,7 @@
 
 **Save your AI conversations, verified complete.**
 
-Verbatim is a Chrome extension that saves the ChatGPT or Claude conversation you're viewing, or any web page, as clean Markdown and structured JSON. It tells you plainly whether the capture is complete. Everything runs in your browser: nothing is uploaded, and it never touches your login.
+Verbatim is a Chrome extension that saves the ChatGPT or Claude conversation you're viewing, the transcript of a YouTube video or Spotify podcast episode, or any web page, as clean Markdown and structured JSON. It tells you plainly whether the capture is complete. Everything runs in your browser: nothing is uploaded, and it never touches your login.
 
 Most chat exporters quietly hand you whatever happened to be on screen. ChatGPT and Claude only keep a few messages in the page at a time, collapse long prompts, and leave hidden copies of other chats in the background. Verbatim scrolls the whole thread, expands what's collapsed, reads only the conversation in the address bar, and checks its own work. When it can't prove it got everything, it says so.
 
@@ -14,6 +14,8 @@ Click the toolbar button and Verbatim picks the right mode from the page you're 
 | --- | --- | --- |
 | ChatGPT conversation | `Title.md`, `Title.json`, `Title — handoff.md` | Continuous top-to-bottom read, no gaps, every message rendered |
 | Claude.ai conversation | same three files | Same, plus a count check against Claude's own "Message N of TOTAL" |
+| YouTube video | `Title.md`, `Title.json` | YouTube's own transcript, chapters kept, last line checked against the video length |
+| Spotify podcast episode | `Title.md`, `Title.json` | Spotify's own transcript (sign in on open.spotify.com; only episodes that have one) |
 | Any other web page | `Title.md`, `Title.json` | Main content found (Readability), navigation and cookie banners removed |
 
 Files are saved to `Downloads/Verbatim/<date> <time> <source> — <title>/`, or straight into a folder you choose, such as your Obsidian vault (see **Save folder** below).
@@ -30,6 +32,8 @@ Files are saved to `Downloads/Verbatim/<date> <time> <source> — <title>/`, or 
 **The handoff file** is built for continuing in another assistant, for example ChatGPT → Claude. It includes instructions for the receiving AI, a brief, every message you wrote word for word, and the AI's replies condensed (the latest one in full).
 
 Everything is computed locally with plain code: no AI calls, no API keys, nothing sent anywhere.
+
+**Every transcript export includes:** front matter (title, channel or show, published date, length, status, tags), the description and its links, chapters, and the transcript in readable paragraphs, each starting with a timestamp. On YouTube, every timestamp links to that moment in the video.
 
 ## Install
 
@@ -77,6 +81,7 @@ The optional save folder uses Chrome's standard folder picker: Verbatim can only
 
 - **ChatGPT:** shows only a handful of turns at a time and lazy-loads older ones. Verbatim scrolls to the top until nothing older loads, then steps down half a screen at a time so every snapshot overlaps the last, and stitches turns together by their IDs. It expands prompts collapsed behind "Show more", ignores hidden copies of previously opened chats, and confirms every message carries the conversation ID in the address bar.
 - **Claude:** every message is labeled with its position and the total, so Verbatim checks that each position from 1 to TOTAL was read.
+- **YouTube and Spotify:** Verbatim opens the site's own transcript, waits until it stops loading, and checks that it starts near 0:00 and that its last line is within a couple of minutes of the end. Spotify only shows how long an episode is while it's playing, so press play first, or the end check reads UNKNOWN.
 
 **Verified** means a complete read of the **displayed conversation**. These are always listed as scope notes rather than claimed:
 
@@ -123,6 +128,7 @@ The tests run the real extension code against simulated pages that reproduce Cha
 ## Known limitations
 
 - **ChatGPT and Claude change their pages without notice.** All selectors sit in one `SEL` block at the top of each adapter. An `incomplete` or empty export is the first sign one needs updating.
+- **Transcripts come from the site, not from Verbatim.** They are usually machine-generated, have no speaker names, and can mishear words. Videos and episodes without a transcript can't be captured this way. The Spotify reader finds the transcript by its "Transcript" heading and timestamps, so a Spotify redesign is the most likely thing to break it.
 - **Images and files are references.** Uploads appear only through temporary in-browser links, so they're listed by name. Keep your originals.
 - **Web pages are read as shown.** Content that loads on scroll or sits behind tabs may be missing. Very app-like pages may convert with some layout text.
 - **Keep the tab in front during conversation captures.** Chrome throttles background tabs.

@@ -10,6 +10,7 @@
  *   pages: { kind: 'page', platform: 'web', platformName, url, title,
  *     page: { markdown, text, description, byline, publishedTime, language, host },
  *     evidence: { ... } }
+ *   transcripts: see core/transcript.js
  */
 (function (root) {
   const NS = (root.ConversationCapture = root.ConversationCapture || {});
@@ -53,9 +54,44 @@
     return page;
   }
 
+  function normalizeTranscript(raw, meta) {
+    const segments = raw.segments.map((s, i) => ({ index: i + 1, start: s.start, text: s.text, speaker: s.speaker || null }));
+    const tr = {
+      schema: SCHEMA,
+      kind: 'transcript',
+      title: raw.title,
+      source: {
+        platform: raw.platform,
+        platformName: raw.platformName,
+        url: raw.url,
+        mediaId: raw.mediaId,
+        mediaType: raw.media.type,
+        show: raw.media.show,
+        showLabel: raw.media.showLabel,
+        publishedTime: raw.media.publishedTime,
+        durationSec: raw.media.durationSec,
+        description: raw.media.description ? raw.media.description.trim() : null,
+        timeLink: raw.media.timeLink,
+      },
+      capture: Object.assign(captureMeta(raw, meta), { method: `rendered page, ${raw.platformName}'s own transcript read` }),
+      stats: {
+        segments: segments.length,
+        chapters: raw.chapters.length,
+        words: segments.reduce((n, s) => n + NS.enrich.words(s.text), 0),
+      },
+      completeness: NS.completeness.assessTranscript(raw),
+      evidence: raw.evidence,
+      chapters: raw.chapters,
+      segments,
+    };
+    tr.enrichment = NS.enrich.enrichTranscript(tr);
+    return tr;
+  }
+
   function normalize(raw, meta) {
     meta = meta || {};
     if (raw.kind === 'page') return normalizePage(raw, meta);
+    if (raw.kind === 'transcript') return normalizeTranscript(raw, meta);
 
     const messages = [];
     raw.turns.forEach((turn, t) => {

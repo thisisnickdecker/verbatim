@@ -5,6 +5,7 @@
  * filesFor(capture) returns every file to save for one capture:
  *   conversation -> <title>.md, <title>.json, <title> — handoff.md
  *   page         -> <title>.md, <title>.json
+ *   transcript   -> <title>.md, <title>.json
  */
 (function (root) {
   const NS = (root.ConversationCapture = root.ConversationCapture || {});
@@ -242,6 +243,83 @@
     return out.join('\n');
   }
 
+  // ---------- transcript ----------
+
+  // Join segments into readable paragraphs: break at chapters and speaker
+  // changes, after a
+  // sentence once a paragraph spans ~45 s, and always by ~90 s.
+  function paragraphs(tr) {
+    const chapterAt = new Map(tr.chapters.filter((c) => c.start != null).map((c) => [c.start, c.title]));
+    const out = [];
+    let cur = null;
+    for (const s of tr.segments) {
+      const chapter = chapterAt.get(s.start);
+      if (chapter) chapterAt.delete(s.start);
+      const span = cur && s.start != null && cur.start != null ? s.start - cur.start : 0;
+      const sentenceEnd = cur && /[.!?]["')\]]?$/.test(cur.text);
+      const untimed = s.start == null && cur && cur.count >= 6;
+      const newSpeaker = cur && s.speaker && s.speaker !== cur.speaker;
+      if (!cur || chapter || newSpeaker || span >= 90 || (span >= 45 && sentenceEnd) || untimed) {
+        cur = { start: s.start, chapter: chapter || null, speaker: s.speaker || null, text: s.text, count: 1 };
+        out.push(cur);
+      } else {
+        cur.text += ' ' + s.text;
+        cur.count++;
+      }
+    }
+    return out;
+  }
+
+  function stampLink(tr, sec) {
+    const c = NS.transcript.clock(sec);
+    if (!c) return '';
+    return tr.source.timeLink ? `[${c}](${tr.source.timeLink.replace('{s}', Math.floor(sec))})` : c;
+  }
+
+  function transcriptMarkdown(tr) {
+    const src = tr.source;
+    const e = tr.enrichment;
+    const clock = NS.transcript.clock;
+    const out = frontmatter({
+      title: tr.title,
+      source: src.url,
+      platform: src.platformName,
+      kind: 'transcript',
+      [src.showLabel.toLowerCase()]: src.show,
+      published: src.publishedTime,
+      duration: clock(src.durationSec),
+      captured: tr.capture.capturedAt,
+      words: tr.stats.words,
+      status: tr.completeness.status,
+      tags: ['verbatim', src.platform, 'transcript'],
+    });
+    out.push(`# ${tr.title}`, '');
+    out.push(`- **Source:** ${src.url}`);
+    if (src.show) out.push(`- **${src.showLabel}:** ${src.show}`);
+    if (src.publishedTime) out.push(`- **Published:** ${src.publishedTime}`);
+    if (src.durationSec) out.push(`- **Length:** ${clock(src.durationSec)}`);
+    out.push(`- **Captured:** ${tr.capture.capturedAt}`);
+    out.push(`- **Transcript:** ${tr.stats.words.toLocaleString('en-US')} words (about ${e.readingMinutes} min read)`);
+    out.push(`- **Completeness:** ${tr.completeness.status.toUpperCase()} — ${tr.completeness.summary}`);
+    out.push('');
+    if (src.description) out.push('## Description', '', src.description.replace(/\n{3,}/g, '\n\n'), '');
+    if (tr.chapters.length) {
+      out.push('## Chapters', '');
+      for (const c of tr.chapters) out.push(`- ${c.start != null ? stampLink(tr, c.start) + ' ' : ''}${c.title}`);
+      out.push('');
+    }
+    out.push('---', '', '## Transcript', '');
+    if (!tr.segments.length) out.push('_(no transcript captured)_', '');
+    for (const p of paragraphs(tr)) {
+      if (p.chapter) out.push(`### ${p.chapter}`, '');
+      const label = [stampLink(tr, p.start), p.speaker].filter(Boolean).join(' ');
+      out.push(`${label ? `**${label}${p.speaker ? ':' : ''}** ` : ''}${p.text}`, '');
+    }
+    if (e.links.length) out.push('---', '', '## Links in the description', '', ...e.links.map((l) => linkLine(l)), '');
+    out.push(...completenessSection(tr.completeness));
+    return out.join('\n');
+  }
+
   // ---------- files ----------
 
   function safeName(s, max) {
@@ -263,9 +341,9 @@
   function filesFor(capture) {
     const folder = folderName(capture);
     const base = safeName(capture.title, 70);
-    if (capture.kind === 'page') {
+    if (capture.kind === 'page' || capture.kind === 'transcript') {
       return [
-        { filename: `${folder}/${base}.md`, mime: 'text/markdown', text: pageMarkdown(capture) },
+        { filename: `${folder}/${base}.md`, mime: 'text/markdown', text: toMarkdown(capture) },
         { filename: `${folder}/${base}.json`, mime: 'application/json', text: toJSON(capture) },
       ];
     }
@@ -276,7 +354,15 @@
     ];
   }
 
-  const toMarkdown = (capture) => (capture.kind === 'page' ? pageMarkdown(capture) : conversationMarkdown(capture));
+  // One line for the capture panel: what was saved.
+  function savedLine(capture) {
+    if (capture.kind === 'page') return `Page saved (${capture.stats.words} words).`;
+    if (capture.kind === 'transcript') return `Transcript saved (${capture.stats.words.toLocaleString('en-US')} words, ${capture.stats.segments} segments).`;
+    return `${capture.stats.messageCount} messages saved, plus a handoff file.`;
+  }
 
-  NS.exporters = { toJSON, toMarkdown, toHandoff: handoffMarkdown, condense, filesFor, folderName, safeName };
+  const toMarkdown = (capture) =>
+    ({ page: pageMarkdown, transcript: transcriptMarkdown }[capture.kind] || conversationMarkdown)(capture);
+
+  NS.exporters = { toJSON, toMarkdown, toHandoff: handoffMarkdown, condense, paragraphs, savedLine, filesFor, folderName, safeName };
 })(globalThis);

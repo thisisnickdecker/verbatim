@@ -1,0 +1,351 @@
+{
+  "schema": "verbatim/v1",
+  "kind": "transcript",
+  "title": "Example: a video transcript",
+  "source": {
+    "platform": "youtube",
+    "platformName": "YouTube",
+    "url": "https://www.youtube.com/watch?v=FquRuBqglg4",
+    "mediaId": "FquRuBqglg4",
+    "mediaType": "video",
+    "show": "The Creative Caucus",
+    "showLabel": "Channel",
+    "publishedTime": "2026-09-07T03:00:14-07:00",
+    "durationSec": 330,
+    "description": "A conversation about rebranding. Notes: https://example.com/notes",
+    "timeLink": "https://www.youtube.com/watch?v=FquRuBqglg4&t={s}s"
+  },
+  "capture": {
+    "capturedAt": "2026-10-28T18:00:00.000Z",
+    "timeZone": "America/New_York",
+    "tool": "Verbatim",
+    "toolVersion": "0.5.0",
+    "method": "rendered page, YouTube's own transcript read",
+    "durationMs": 18
+  },
+  "stats": {
+    "segments": 40,
+    "chapters": 2,
+    "words": 440
+  },
+  "completeness": {
+    "status": "verified",
+    "summary": "The whole transcript was captured (40 segments, start to end).",
+    "checks": [
+      {
+        "id": "transcript_found",
+        "label": "YouTube transcript found",
+        "result": "pass",
+        "detail": "40 transcript segments read from the \"Show transcript\" panel.",
+        "required": true
+      },
+      {
+        "id": "matches_page",
+        "label": "Transcript belongs to the video in the address bar",
+        "result": "pass",
+        "detail": "Read from the page for FquRuBqglg4.",
+        "required": true
+      },
+      {
+        "id": "settled",
+        "label": "Transcript finished loading",
+        "result": "pass",
+        "detail": "The number of lines stopped changing before reading.",
+        "required": true
+      },
+      {
+        "id": "covers_start",
+        "label": "Starts at the beginning",
+        "result": "pass",
+        "detail": "First line at 0:00.",
+        "required": true
+      },
+      {
+        "id": "covers_end",
+        "label": "Runs to the end",
+        "result": "pass",
+        "detail": "Last line at 5:12 of 5:30.",
+        "required": true
+      }
+    ],
+    "warnings": [
+      "This is YouTube's own transcript, usually machine-generated: expect misheard words and missing punctuation. Check quotes against the audio before citing them.",
+      "Speakers are not labelled; the transcript does not say who is talking.",
+      "Words YouTube masks as profanity appear as \"[ __ ]\"."
+    ]
+  },
+  "evidence": {
+    "layout": "transcript",
+    "panelFound": true,
+    "panelOpened": true,
+    "idMatches": true,
+    "settled": true,
+    "segmentCount": 40,
+    "firstSegmentSec": 0,
+    "lastSegmentSec": 312,
+    "durationSec": 330,
+    "timestamped": true,
+    "durationMs": 18
+  },
+  "chapters": [
+    {
+      "start": 0,
+      "title": "Chapter 1: Where the idea came from"
+    },
+    {
+      "start": 160,
+      "title": "Chapter 2: Shipping it"
+    }
+  ],
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "text": "and the brief changes again when the client sees part 1",
+      "speaker": null
+    },
+    {
+      "index": 2,
+      "start": 8,
+      "text": "and the brief changes again when the client sees part 2",
+      "speaker": null
+    },
+    {
+      "index": 3,
+      "start": 16,
+      "text": "That is the point we keep coming back to, number 3.",
+      "speaker": null
+    },
+    {
+      "index": 4,
+      "start": 24,
+      "text": "and the brief changes again when the client sees part 4",
+      "speaker": null
+    },
+    {
+      "index": 5,
+      "start": 32,
+      "text": "and the brief changes again when the client sees part 5",
+      "speaker": null
+    },
+    {
+      "index": 6,
+      "start": 40,
+      "text": "That is the point we keep coming back to, number 6.",
+      "speaker": null
+    },
+    {
+      "index": 7,
+      "start": 48,
+      "text": "and the brief changes again when the client sees part 7",
+      "speaker": null
+    },
+    {
+      "index": 8,
+      "start": 56,
+      "text": "and the brief changes again when the client sees part 8",
+      "speaker": null
+    },
+    {
+      "index": 9,
+      "start": 64,
+      "text": "That is the point we keep coming back to, number 9.",
+      "speaker": null
+    },
+    {
+      "index": 10,
+      "start": 72,
+      "text": "and the brief changes again when the client sees part 10",
+      "speaker": null
+    },
+    {
+      "index": 11,
+      "start": 80,
+      "text": "and the brief changes again when the client sees part 11",
+      "speaker": null
+    },
+    {
+      "index": 12,
+      "start": 88,
+      "text": "That is the point we keep coming back to, number 12.",
+      "speaker": null
+    },
+    {
+      "index": 13,
+      "start": 96,
+      "text": "and the brief changes again when the client sees part 13",
+      "speaker": null
+    },
+    {
+      "index": 14,
+      "start": 104,
+      "text": "and the brief changes again when the client sees part 14",
+      "speaker": null
+    },
+    {
+      "index": 15,
+      "start": 112,
+      "text": "That is the point we keep coming back to, number 15.",
+      "speaker": null
+    },
+    {
+      "index": 16,
+      "start": 120,
+      "text": "and the brief changes again when the client sees part 16",
+      "speaker": null
+    },
+    {
+      "index": 17,
+      "start": 128,
+      "text": "and the brief changes again when the client sees part 17",
+      "speaker": null
+    },
+    {
+      "index": 18,
+      "start": 136,
+      "text": "That is the point we keep coming back to, number 18.",
+      "speaker": null
+    },
+    {
+      "index": 19,
+      "start": 144,
+      "text": "and the brief changes again when the client sees part 19",
+      "speaker": null
+    },
+    {
+      "index": 20,
+      "start": 152,
+      "text": "and the brief changes again when the client sees part 20",
+      "speaker": null
+    },
+    {
+      "index": 21,
+      "start": 160,
+      "text": "That is the point we keep coming back to, number 21.",
+      "speaker": null
+    },
+    {
+      "index": 22,
+      "start": 168,
+      "text": "and the brief changes again when the client sees part 22",
+      "speaker": null
+    },
+    {
+      "index": 23,
+      "start": 176,
+      "text": "and the brief changes again when the client sees part 23",
+      "speaker": null
+    },
+    {
+      "index": 24,
+      "start": 184,
+      "text": "That is the point we keep coming back to, number 24.",
+      "speaker": null
+    },
+    {
+      "index": 25,
+      "start": 192,
+      "text": "and the brief changes again when the client sees part 25",
+      "speaker": null
+    },
+    {
+      "index": 26,
+      "start": 200,
+      "text": "and the brief changes again when the client sees part 26",
+      "speaker": null
+    },
+    {
+      "index": 27,
+      "start": 208,
+      "text": "That is the point we keep coming back to, number 27.",
+      "speaker": null
+    },
+    {
+      "index": 28,
+      "start": 216,
+      "text": "and the brief changes again when the client sees part 28",
+      "speaker": null
+    },
+    {
+      "index": 29,
+      "start": 224,
+      "text": "and the brief changes again when the client sees part 29",
+      "speaker": null
+    },
+    {
+      "index": 30,
+      "start": 232,
+      "text": "That is the point we keep coming back to, number 30.",
+      "speaker": null
+    },
+    {
+      "index": 31,
+      "start": 240,
+      "text": "and the brief changes again when the client sees part 31",
+      "speaker": null
+    },
+    {
+      "index": 32,
+      "start": 248,
+      "text": "and the brief changes again when the client sees part 32",
+      "speaker": null
+    },
+    {
+      "index": 33,
+      "start": 256,
+      "text": "That is the point we keep coming back to, number 33.",
+      "speaker": null
+    },
+    {
+      "index": 34,
+      "start": 264,
+      "text": "and the brief changes again when the client sees part 34",
+      "speaker": null
+    },
+    {
+      "index": 35,
+      "start": 272,
+      "text": "and the brief changes again when the client sees part 35",
+      "speaker": null
+    },
+    {
+      "index": 36,
+      "start": 280,
+      "text": "That is the point we keep coming back to, number 36.",
+      "speaker": null
+    },
+    {
+      "index": 37,
+      "start": 288,
+      "text": "and the brief changes again when the client sees part 37",
+      "speaker": null
+    },
+    {
+      "index": 38,
+      "start": 296,
+      "text": "and the brief changes again when the client sees part 38",
+      "speaker": null
+    },
+    {
+      "index": 39,
+      "start": 304,
+      "text": "That is the point we keep coming back to, number 39.",
+      "speaker": null
+    },
+    {
+      "index": 40,
+      "start": 312,
+      "text": "and the brief changes again when the client sees part 40",
+      "speaker": null
+    }
+  ],
+  "enrichment": {
+    "links": [
+      {
+        "url": "https://example.com/notes",
+        "label": ""
+      }
+    ],
+    "readingMinutes": 2
+  }
+}

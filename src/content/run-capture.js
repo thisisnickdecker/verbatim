@@ -44,8 +44,9 @@
       if (!platform) {
         return { error: 'Verbatim can only capture regular web pages (http or https).' };
       }
-      const isPage = !!platform.fallback;
-      NS.showPanel(isPage ? 'Verbatim\nReading this page…' : 'Verbatim\nScrolling to the start of the conversation…\nPlease keep this tab open and in front.');
+      NS.showPanel(platform.fallback ? 'Verbatim\nReading this page…'
+        : platform.kind === 'transcript' ? `Verbatim\nOpening the ${platform.name} transcript…`
+        : 'Verbatim\nScrolling to the start of the conversation…\nPlease keep this tab open and in front.');
       const raw = await platform.collect({
         document,
         url: location.href,
@@ -56,9 +57,11 @@
       });
       const capture = NS.normalize(raw, meta);
       const c = capture.completeness;
-      const what = capture.kind === 'page' ? `Page saved (${capture.stats.words} words).` : `${capture.stats.messageCount} messages saved, plus a handoff file.`;
+      const what = capture.kind === 'page' ? `Page read (${capture.stats.words} words).`
+        : capture.kind === 'transcript' ? `Transcript read (${capture.stats.segments} segments).`
+        : `${capture.stats.messageCount} messages read.`;
       // The background worker replaces this with the final message once the files are saved.
-      NS.showPanel(`Verbatim\n${what.replace(' saved', ' read')}\nSaving…`);
+      NS.showPanel(`Verbatim\n${what}\nSaving…`);
       return { capture };
     } catch (err) {
       NS.showPanel('Verbatim failed:\n' + (err && err.message), 'error', 12000);
