@@ -75,12 +75,13 @@ test('short conversation: 1 turn, verified, metadata present', async () => {
   assert.equal(conv.stats.messageCount, 2);
   assert.equal(conv.completeness.status, 'verified');
   assert.equal(conv.title, 'Short chat');
-  assert.equal(conv.source.url, 'https://chatgpt.com/c/6ae0b249-6f9c-83e9-9f15-a65b8f99010f');
-  assert.equal(conv.source.conversationId, '6ae0b249-6f9c-83e9-9f15-a65b8f99010f');
+  assert.equal(conv.source.url, 'https://chatgpt.com/c/0a1b2c3d-0000-4000-8000-00000000c0de');
+  assert.equal(conv.source.conversationId, '0a1b2c3d-0000-4000-8000-00000000c0de');
   assert.match(conv.capture.capturedAt, /^\d{4}-\d\d-\d\dT/);
   assert.deepEqual(plain(conv.messages.map((m) => m.role)), ['user', 'assistant']);
-  assert.match(md, /^# Short chat/);
-  assert.match(md, /\*\*Messages:\*\* 2 \(1 user, 1 assistant\)/);
+  assert.match(md, /^---\ntitle: "Short chat"/);
+  assert.match(md, /\n# Short chat\n/);
+  assert.match(md, /\*\*Messages:\*\* 2 \(1 from you, 1 from ChatGPT\)/);
 });
 
 test('long virtualized conversation with lazy loading: 150 turns stitched in order', async () => {
@@ -240,19 +241,26 @@ test('response still streaming -> incomplete', async () => {
   assert.equal(conv.completeness.status, 'incomplete');
 });
 
-test('non-conversation pages are not matched', async () => {
+test('each URL goes to the right adapter', async () => {
   const { page } = await capture({ turns: simpleTurns(1) });
   const CC = page.CC;
-  assert.equal(CC.findPlatform('https://chatgpt.com/'), null);
-  assert.equal(CC.findPlatform('https://example.com/c/6ae0b249-6f9c'), null);
-  assert.ok(CC.findPlatform('https://chatgpt.com/g/g-p-abc/c/6ae0b249-6f9c-83e9-9f15-a65b8f99010f'));
+  assert.equal(CC.findPlatform('https://chatgpt.com/').id, 'web', 'ChatGPT home is just a page');
+  assert.equal(CC.findPlatform('https://example.com/c/6ae0b249-6f9c').id, 'web');
+  assert.equal(CC.findPlatform('https://chatgpt.com/g/g-p-abc/c/0a1b2c3d-0000-4000-8000-00000000c0de').id, 'chatgpt');
+  assert.equal(CC.findPlatform('https://claude.ai/chat/0a1b2c3d-0000-4000-8000-00000000c0de').id, 'claude');
+  assert.equal(CC.findPlatform('https://claude.ai/recents').id, 'web');
+  assert.equal(CC.findPlatform('chrome://extensions'), null);
 });
 
 test('write example exports', async () => {
   const turns = RICH_TURNS.map((t) => ({ ...t }));
-  const { md, json } = await capture({ turns, title: 'Example: formatting, code and images' });
+  const { conv, page } = await capture({ turns, title: 'Example: formatting, code and images' });
   const dir = path.join(__dirname, '..', 'examples');
-  fs.writeFileSync(path.join(dir, 'example-conversation.md'), md);
-  fs.writeFileSync(path.join(dir, 'example-conversation.json'), json);
-  JSON.parse(json);
+  for (const f of fs.readdirSync(dir)) fs.rmSync(path.join(dir, f));
+  for (const f of page.CC.exporters.filesFor(conv)) {
+    const base = path.basename(f.filename);
+    const name = base.endsWith(' — handoff.md') ? 'example-conversation.handoff.md' : 'example-conversation' + path.extname(base);
+    fs.writeFileSync(path.join(dir, name), f.text);
+  }
+  JSON.parse(fs.readFileSync(path.join(dir, 'example-conversation.json'), 'utf8'));
 });

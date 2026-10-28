@@ -1,15 +1,11 @@
 {
-  "name": "conversation-capture",
-  "version": "0.1.1",
-  "directories": {
-    "example": "examples",
-    "test": "test"
-  },
+  "name": "verbatim",
+  "version": "0.2.0",
   "scripts": {
-    "test": "node --test test/capture.test.js"
+    "test": "node --test test/capture.test.js test/verbatim.test.js"
   },
-  "license": "UNLICENSED",
-  "description": "Chrome extension: export ChatGPT conversations to Markdown and JSON",
+  "license": "MIT",
+  "description": "Verbatim: save ChatGPT and Claude conversations, or any web page, as clean Markdown, verified complete.",
   "devDependencies": {
     "jsdom": "^24.1.3",
     "terser": "^5.51.2"

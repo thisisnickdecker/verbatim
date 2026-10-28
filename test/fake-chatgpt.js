@@ -10,13 +10,23 @@ const path = require('path');
 const { JSDOM } = require('jsdom');
 
 const SRC = [
+  'src/vendor/Readability.js',
   'src/core/html-to-markdown.js',
+  'src/core/enrich.js',
   'src/core/completeness.js',
   'src/core/normalize.js',
   'src/platforms/chatgpt.js',
+  'src/platforms/claude.js',
+  'src/platforms/web.js',
   'src/platforms/registry.js',
   'src/core/exporters.js',
 ];
+
+// Load the extension source into a jsdom window, as the content scripts run.
+function loadSource(window) {
+  for (const f of SRC) window.eval(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'));
+  return window.ConversationCapture;
+}
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -87,7 +97,7 @@ function turnHtml(turn, state, expanded) {
  */
 function createPage(opts) {
   const H = 1000; // px per turn
-  const conversationId = opts.conversationId || '6ae0b249-6f9c-83e9-9f15-a65b8f99010f';
+  const conversationId = opts.conversationId || '0a1b2c3d-0000-4000-8000-00000000c0de';
   const VIEW = 800;
   const dom = new JSDOM(
     `<!doctype html><html><head><title>${esc(opts.title || 'Test conversation')}</title></head><body><main>
@@ -164,8 +174,7 @@ function createPage(opts) {
   });
 
   render();
-  for (const f of SRC) window.eval(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'));
-  return { window, doc, sleep, CC: window.ConversationCapture };
+  return { window, doc, sleep, CC: loadSource(window) };
 }
 
 async function capture(opts) {
@@ -175,7 +184,7 @@ async function capture(opts) {
     document: page.doc,
     url: page.window.location.href,
     sleep: page.sleep,
-    timing: { expandWait: 0, settle: 0, step: 0, renderWait: 0, topTimeout: opts.topTimeout || 50, maxDuration: 60000 },
+    timing: { expandWait: 0, settle: 0, step: 0, renderWait: 0, topTimeout: opts.topTimeout || 5000, maxDuration: 60000 },
   });
   const conv = page.CC.normalize(raw, { version: '0.1.0', capturedAt: '2026-10-27T18:00:00.000Z' });
   return { page, raw, conv, md: page.CC.exporters.toMarkdown(conv), json: page.CC.exporters.toJSON(conv) };
@@ -189,4 +198,4 @@ function simpleTurns(n, prefix) {
   }));
 }
 
-module.exports = { createPage, capture, simpleTurns };
+module.exports = { createPage, capture, simpleTurns, loadSource };

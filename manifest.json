@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Conversation Capture",
-  "version": "0.1.1",
-  "description": "Export the ChatGPT conversation you are viewing to clean Markdown and structured JSON, locally.",
+  "name": "Verbatim",
+  "version": "0.2.0",
+  "description": "Save ChatGPT and Claude conversations, or any web page, as clean Markdown, verified complete. Runs entirely in your browser.",
   "minimum_chrome_version": "116",
-  "permissions": ["activeTab", "scripting", "downloads", "declarativeContent"],
+  "permissions": ["activeTab", "scripting", "downloads"],
   "background": { "service_worker": "src/background.js" },
   "action": {
-    "default_title": "Capture Conversation",
+    "default_title": "Capture with Verbatim",
     "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
   },
   "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }

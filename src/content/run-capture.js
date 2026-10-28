@@ -7,7 +7,7 @@
 (function (root) {
   const NS = (root.ConversationCapture = root.ConversationCapture || {});
 
-  const PANEL_ID = 'conversation-capture-panel';
+  const PANEL_ID = 'verbatim-capture-panel';
 
   function panel(text, tone) {
     let el = document.getElementById(PANEL_ID);
@@ -42,27 +42,29 @@
     try {
       const platform = NS.findPlatform(location.href);
       if (!platform) {
-        return { error: 'This page is not a supported conversation. Open a ChatGPT conversation (chatgpt.com/c/…) and try again.' };
+        return { error: 'Verbatim can only capture regular web pages (http or https).' };
       }
-      NS.showPanel('Conversation Capture\nScrolling to the start of the conversation…\nPlease keep this tab open and in front.');
+      const isPage = !!platform.fallback;
+      NS.showPanel(isPage ? 'Verbatim\nReading this page…' : 'Verbatim\nScrolling to the start of the conversation…\nPlease keep this tab open and in front.');
       const raw = await platform.collect({
         document,
         url: location.href,
         onProgress(p) {
           try { chrome.runtime.sendMessage({ type: 'cc-progress', pct: p.pct }); } catch (_) { /* ignore */ }
-          if (p.phase === 'sweep') NS.showPanel(`Conversation Capture\nReading messages… ${p.pct}%  (${p.turns} turns so far)\nPlease don't scroll this tab.`);
+          if (p.phase === 'sweep') NS.showPanel(`Verbatim\nReading ${platform.name}… ${p.pct}%  (${p.turns} so far)\nPlease don't scroll this tab.`);
         },
       });
-      const conversation = NS.normalize(raw, meta);
-      const c = conversation.completeness;
+      const capture = NS.normalize(raw, meta);
+      const c = capture.completeness;
+      const what = capture.kind === 'page' ? `Page saved (${capture.stats.words} words).` : `${capture.stats.messageCount} messages saved, plus a handoff file.`;
       NS.showPanel(
-        `Conversation Capture — ${c.status.toUpperCase()}\n${conversation.stats.messageCount} messages saved.\n${c.summary}`,
-        c.status === 'verified' ? 'ok' : c.status === 'unverified' ? 'warn' : 'error',
+        `Verbatim — ${c.status.toUpperCase()}\n${what}\n${c.summary}`,
+        c.status === 'verified' || c.status === 'captured' ? 'ok' : c.status === 'unverified' ? 'warn' : 'error',
         12000
       );
-      return { conversation };
+      return { capture };
     } catch (err) {
-      NS.showPanel('Conversation Capture failed:\n' + (err && err.message), 'error', 12000);
+      NS.showPanel('Verbatim failed:\n' + (err && err.message), 'error', 12000);
       return { error: String((err && err.stack) || err) };
     } finally {
       NS._running = false;

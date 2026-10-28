@@ -40,8 +40,17 @@
       e.foreignMessages ? `${e.foreignMessages} message(s) carry a different conversation ID than the page URL; another conversation's content was read.`
         : `Read only the visible conversation${e.hiddenViewsIgnored ? ` (ignored ${e.hiddenViewsIgnored} hidden view(s) of previously opened chats)` : ''}.`));
 
+    if (e.expectedMessages != null) {
+      // The platform states its total (Claude: "Message N of TOTAL"): check every position was read.
+      const missing = e.missingIndices || [];
+      checks.push(check('count_matches', 'Every message the page says exists was captured',
+        missing.length ? 'fail' : 'pass',
+        missing.length ? `The page reports ${e.expectedMessages} messages; ${missing.length} were never read (positions ${missing.slice(0, 10).map((i) => i + 1).join(', ')}${missing.length > 10 ? ', …' : ''}).`
+          : `Captured all ${e.expectedMessages} messages the page reports.`));
+    }
+
     const continuity = e.snapshots > 0 && e.reachedTop && e.reachedBottom;
-    checks.push(check('continuous_sweep', 'No gaps between scroll snapshots',
+    if (e.expectedMessages == null) checks.push(check('continuous_sweep', 'No gaps between scroll snapshots',
       !continuity ? 'unknown' : e.gapCount === 0 && e.olderTurnsAppearedDuringSweep === 0 ? 'pass' : 'fail',
       !continuity ? 'A full top-to-bottom sweep did not happen, so continuity cannot be shown.'
         : e.gapCount === 0 && e.olderTurnsAppearedDuringSweep === 0
@@ -84,12 +93,12 @@
       warnings.push('Some messages have edited/regenerated alternatives (e.g. "2/2"). Only the branch currently shown on screen was captured.');
     }
     if (messages.some((m) => m.flags.includes('collapsed-reasoning-not-captured'))) {
-      warnings.push('Some responses include collapsed reasoning ("Thought for …"). Reasoning text is not captured.');
+      warnings.push('Some responses include collapsed reasoning or tool-use steps (e.g. "Thought for …"). Only the visible reply text is captured.');
     }
     const imageCount = messages.reduce((n, m) => n + m.attachments.filter((a) => a.type === 'image').length, 0);
     const sessionOnly = messages.reduce((n, m) => n + m.attachments.filter((a) => a.type === 'image' && !a.url).length, 0);
     if (sessionOnly) {
-      warnings.push(`${sessionOnly} uploaded image(s) are only listed: ChatGPT displays them from temporary in-browser links, so no lasting URL exists. Keep the originals separately.`);
+      warnings.push(`${sessionOnly} uploaded image(s) are only listed: ${raw.platformName} displays them from temporary in-browser links, so no lasting URL exists. Keep the originals separately.`);
     }
     if (imageCount) {
       warnings.push(`${imageCount} image(s) are recorded as URL references only; the image files were not downloaded and their URLs may require sign-in or expire.`);
@@ -97,7 +106,12 @@
     if (messages.some((m) => m.attachments.some((a) => a.type === 'file'))) {
       warnings.push('File attachments are recorded by name only (detected heuristically); file contents were not captured.');
     }
-    warnings.push('Completeness is judged from the rendered page. ChatGPT does not display a total message count, so the check confirms a continuous top-to-bottom read, not a count match.');
+    if (messages.some((m) => m.attachments.some((a) => a.note && /artifact/.test(a.note)))) {
+      warnings.push('Artifacts/documents created in the chat are listed by name; open them in the chat to save their contents.');
+    }
+    warnings.push(e.expectedMessages != null
+      ? `Completeness is judged from the rendered page and checked against the ${e.expectedMessages}-message total that ${raw.platformName} reports.`
+      : `Completeness is judged from the rendered page. ${raw.platformName} does not display a total message count, so the check confirms a continuous top-to-bottom read, not a count match.`);
 
     const required = checks.filter((c) => c.required);
     const status = required.some((c) => c.result === 'fail') ? 'incomplete'
@@ -112,5 +126,23 @@
     return { status, summary, checks, warnings };
   }
 
-  NS.completeness = { assess };
+  // Web pages: there is no "complete" to prove, only whether main content was found.
+  function assessPage(raw) {
+    const e = raw.evidence || {};
+    const found = e.wordCount >= 20; // a few stray words ("Menu") is not content
+    const checks = [
+      check('main_content', 'Main content found', found ? 'pass' : 'fail',
+        found ? `${e.wordCount} words extracted (${e.method === 'readability' ? 'article detection' : 'main page area'}).` : `Only ${e.wordCount} word(s) of readable text were found on the page.`),
+    ];
+    const warnings = [
+      'Navigation, headers, footers and cookie banners are removed; images are kept as links, not downloaded.',
+      'The page is read as currently shown. Content that loads only when you scroll, or that sits behind tabs or "read more" buttons, may be missing.',
+    ];
+    if (e.method !== 'readability') warnings.push('No single article was detected, so the whole main area of the page was converted; expect some layout text.');
+    const status = found ? 'captured' : 'incomplete';
+    const summary = status === 'captured' ? `Captured the main content of this page (${e.wordCount} words).` : 'No readable content was found on this page.';
+    return { status, summary, checks, warnings };
+  }
+
+  NS.completeness = { assess, assessPage };
 })(globalThis);

@@ -1,41 +1,27 @@
 /*
  * Background service worker.
- *  - Enables the toolbar button only on supported conversation pages.
- *  - On click, injects the capture scripts into the active tab (activeTab grant).
- *  - Receives the normalized conversation and saves conversation.md + .json
- *    with chrome.downloads. Nothing is sent anywhere else.
+ *  - On toolbar click, injects the capture scripts into the active tab
+ *    (activeTab grant: only that tab, only on click).
+ *  - Receives the normalized capture and saves its files with chrome.downloads.
+ *    Nothing is sent anywhere else.
  */
-importScripts('core/exporters.js');
+importScripts('core/enrich.js', 'core/exporters.js');
 
 const CC = globalThis.ConversationCapture;
 
 // Order matters: shared core first, then platform adapters, then the entry point.
 const CONTENT_FILES = [
+  'src/vendor/Readability.js',
   'src/core/html-to-markdown.js',
+  'src/core/enrich.js',
   'src/core/completeness.js',
   'src/core/normalize.js',
   'src/platforms/chatgpt.js',
+  'src/platforms/claude.js',
+  'src/platforms/web.js',
   'src/platforms/registry.js',
   'src/content/run-capture.js',
 ];
-
-const SUPPORTED_PAGES = [
-  // ChatGPT conversation URLs, including those inside GPTs and projects (/g/…/c/<id>).
-  { hostEquals: 'chatgpt.com', pathContains: '/c/' },
-  { hostEquals: 'chat.openai.com', pathContains: '/c/' },
-];
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.action.disable();
-  chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
-    chrome.declarativeContent.onPageChanged.addRules([
-      {
-        conditions: SUPPORTED_PAGES.map((pageUrl) => new chrome.declarativeContent.PageStateMatcher({ pageUrl })),
-        actions: [new chrome.declarativeContent.ShowAction()],
-      },
-    ]);
-  });
-});
 
 function badge(tabId, text, color) {
   chrome.action.setBadgeText({ tabId, text });
@@ -43,6 +29,11 @@ function badge(tabId, text, color) {
 }
 
 chrome.action.onClicked.addListener(async (tab) => {
+  if (!/^https?:/.test(tab.url || '')) {
+    // Chrome's own pages (chrome://, the Web Store) can't be read by extensions.
+    badge(tab.id, '—', '#6b7280');
+    return;
+  }
   badge(tab.id, '…', '#4b5563');
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: CONTENT_FILES });
@@ -53,7 +44,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     });
   } catch (err) {
     badge(tab.id, 'ERR', '#b91c1c');
-    console.error('Conversation Capture: could not start', err);
+    console.error('Verbatim: could not start', err);
   }
 });
 
@@ -64,22 +55,26 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'cc-result') saveResult(tabId, msg.result);
 });
 
+const STATUS_BADGE = {
+  verified: ['OK', '#047857'],
+  captured: ['OK', '#047857'],
+  unverified: ['?', '#b45309'],
+  incomplete: ['!', '#b91c1c'],
+};
+
 async function saveResult(tabId, result) {
   if (!result || result.error) {
     badge(tabId, 'ERR', '#b91c1c');
-    await notifyInPage(tabId, 'Conversation Capture could not export:\n' + ((result && result.error) || 'unknown error').split('\n')[0], 'error');
+    await notifyInPage(tabId, 'Verbatim could not export:\n' + ((result && result.error) || 'unknown error').split('\n')[0], 'error');
     return;
   }
-  const conv = result.conversation;
-  const folder = CC.exporters.folderName(conv);
+  const capture = result.capture;
   try {
-    await download(`${folder}/conversation.md`, 'text/markdown', CC.exporters.toMarkdown(conv));
-    await download(`${folder}/conversation.json`, 'application/json', CC.exporters.toJSON(conv));
-    const s = conv.completeness.status;
-    badge(tabId, s === 'verified' ? 'OK' : s === 'unverified' ? '?' : '!', s === 'verified' ? '#047857' : s === 'unverified' ? '#b45309' : '#b91c1c');
+    for (const f of CC.exporters.filesFor(capture)) await download(f.filename, f.mime, f.text);
+    badge(tabId, ...(STATUS_BADGE[capture.completeness.status] || ['?', '#b45309']));
   } catch (err) {
     badge(tabId, 'ERR', '#b91c1c');
-    await notifyInPage(tabId, 'Conversation Capture could not save files:\n' + err.message, 'error');
+    await notifyInPage(tabId, 'Verbatim could not save files:\n' + err.message, 'error');
   }
 }
 

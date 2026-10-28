@@ -1,18 +1,20 @@
 {
-  "schema": "conversation-capture/v1",
+  "schema": "verbatim/v1",
+  "kind": "conversation",
   "title": "Example: formatting, code and images",
   "source": {
     "platform": "chatgpt",
     "platformName": "ChatGPT",
-    "url": "https://chatgpt.com/c/6ae0b249-6f9c-83e9-9f15-a65b8f99010f",
-    "conversationId": "6ae0b249-6f9c-83e9-9f15-a65b8f99010f"
+    "url": "https://chatgpt.com/c/0a1b2c3d-0000-4000-8000-00000000c0de",
+    "conversationId": "0a1b2c3d-0000-4000-8000-00000000c0de"
   },
   "capture": {
     "capturedAt": "2026-10-27T18:00:00.000Z",
-    "tool": "Conversation Capture",
+    "timeZone": "America/New_York",
+    "tool": "Verbatim",
     "toolVersion": "0.1.0",
-    "method": "rendered-page (DOM) read with scroll sweep",
-    "durationMs": 85
+    "method": "rendered page (DOM) read with scroll sweep",
+    "durationMs": 113
   },
   "stats": {
     "messageCount": 6,
@@ -107,7 +109,7 @@
       }
     ],
     "warnings": [
-      "Some responses include collapsed reasoning (\"Thought for …\"). Reasoning text is not captured.",
+      "Some responses include collapsed reasoning or tool-use steps (e.g. \"Thought for …\"). Only the visible reply text is captured.",
       "1 uploaded image(s) are only listed: ChatGPT displays them from temporary in-browser links, so no lasting URL exists. Keep the originals separately.",
       "3 image(s) are recorded as URL references only; the image files were not downloaded and their URLs may require sign-in or expire.",
       "File attachments are recorded by name only (detected heuristically); file contents were not captured.",
@@ -128,7 +130,7 @@
     "hiddenViewsIgnored": 0,
     "foreignMessages": 0,
     "streaming": false,
-    "durationMs": 85
+    "durationMs": 113
   },
   "messages": [
     {
@@ -246,5 +248,94 @@
         "collapsed-reasoning-not-captured"
       ]
     }
-  ]
+  ],
+  "enrichment": {
+    "outline": [
+      {
+        "messageIndex": 1,
+        "text": "Can you show me a Python example and a shell command?",
+        "words": 14
+      },
+      {
+        "messageIndex": 3,
+        "text": "Now show every kind of formatting.",
+        "words": 6
+      },
+      {
+        "messageIndex": 5,
+        "text": "Here are my notebook photos and the PDF.",
+        "words": 8
+      }
+    ],
+    "contributions": {
+      "userWords": 28,
+      "assistantWords": 106,
+      "userShare": 21
+    },
+    "questions": [
+      {
+        "messageIndex": 1,
+        "text": "Can you show me a Python example and a shell command?"
+      }
+    ],
+    "links": [
+      {
+        "messageIndex": 4,
+        "role": "assistant",
+        "url": "https://example.com/a(b%29",
+        "label": "link"
+      },
+      {
+        "messageIndex": 4,
+        "role": "assistant",
+        "url": "https://docs.example.com/x",
+        "label": "Example Docs: Page"
+      }
+    ],
+    "codeBlocks": [
+      {
+        "messageIndex": 2,
+        "role": "assistant",
+        "language": "python"
+      },
+      {
+        "messageIndex": 2,
+        "role": "assistant",
+        "language": "text"
+      }
+    ],
+    "images": [
+      {
+        "messageIndex": 5,
+        "role": "user",
+        "type": "image",
+        "url": "https://files.example/notebook-01.jpg",
+        "alt": "Uploaded image"
+      },
+      {
+        "messageIndex": 5,
+        "role": "user",
+        "type": "image",
+        "url": null,
+        "sessionUrl": "blob:https://chatgpt.com/0b1c2d3e-0000-4000-8000-000000000000",
+        "alt": "User attachment",
+        "note": "session-only"
+      },
+      {
+        "messageIndex": 6,
+        "role": "assistant",
+        "type": "image",
+        "url": "https://images.example/spread.png",
+        "alt": "Notebook spread"
+      }
+    ],
+    "files": [
+      {
+        "messageIndex": 5,
+        "role": "user",
+        "type": "file",
+        "name": "workshop-notes.pdf"
+      }
+    ]
+  }
 }
