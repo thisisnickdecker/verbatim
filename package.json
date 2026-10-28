@@ -2,7 +2,8 @@
   "name": "verbatim",
   "version": "0.6.0",
   "scripts": {
-    "test": "node --test test/capture.test.js test/verbatim.test.js test/site.test.js"
+    "test": "node --test test/capture.test.js test/verbatim.test.js test/site.test.js",
+    "package": "node scripts/package.js"
   },
   "license": "MIT",
   "description": "Verbatim: save ChatGPT and Claude conversations, YouTube and Spotify transcripts, any web page or a whole website, as clean Markdown, verified complete.",

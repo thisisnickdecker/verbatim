@@ -2,7 +2,9 @@
 
 **Save your AI conversations, verified complete.**
 
-Verbatim is a Chrome extension that saves the ChatGPT or Claude conversation you're viewing, the transcript of a YouTube video or Spotify podcast episode, or any web page, as clean Markdown and structured JSON. It tells you plainly whether the capture is complete. Everything runs in your browser: nothing is uploaded, and it never touches your login.
+Verbatim is a Chrome extension that saves the ChatGPT or Claude conversation you're viewing, the transcript of a YouTube video or Spotify podcast episode, any web page, or a whole website with its images and videos, as clean Markdown and structured JSON. It tells you plainly whether the capture is complete. Everything runs in your browser: nothing is uploaded, and it never touches your login.
+
+**[Download the latest release](https://github.com/thisisnickdecker/verbatim/releases/latest)** · [Install](#install) · [What you get](#what-you-get) · [Privacy](#privacy-and-permissions)
 
 Most chat exporters quietly hand you whatever happened to be on screen. ChatGPT and Claude only keep a few messages in the page at a time, collapse long prompts, and leave hidden copies of other chats in the background. Verbatim scrolls the whole thread, expands what's collapsed, reads only the conversation in the address bar, and checks its own work. When it can't prove it got everything, it says so.
 
@@ -51,22 +53,31 @@ Images are saved at full size: the largest size a page offers, and the original 
 
 ## Install
 
-1. Download or clone this repository.
-2. In Chrome, open `chrome://extensions` and turn on **Developer mode**.
-3. Click **Load unpacked** and choose the `verbatim` folder (the one with `manifest.json`).
-4. Pin **Verbatim** from the puzzle-piece menu.
+Verbatim isn't in the Chrome Web Store. You install it from a download, which takes about a minute:
 
-After updating the code, click the reload ↻ icon on the extension's card.
+1. **Download** `verbatim-<version>.zip` from the [latest release](https://github.com/thisisnickdecker/verbatim/releases/latest) (under **Assets**).
+2. **Unzip it** (double-click in Finder). You get a folder called `verbatim-<version>`. Move it somewhere it can stay, such as your Documents folder: Chrome loads Verbatim from this folder every time it starts, so don't delete it.
+3. In Chrome, go to **`chrome://extensions`** (type it in the address bar) and turn on **Developer mode**, top right.
+4. Click **Load unpacked** and choose the `verbatim-<version>` folder (the one that contains `manifest.json`).
+5. Click the puzzle-piece icon in Chrome's toolbar and **pin Verbatim**, so its button is always visible.
+
+Works in Chrome and other Chromium browsers (Arc, Brave, Edge). Chrome may show a banner about developer-mode extensions when it starts; that's normal for extensions installed this way.
+
+**Updating:** download the new release and unzip it. Replace the *contents* of the folder you loaded with the new files (keep the folder itself in the same place), then click Verbatim's reload ↻ icon in `chrome://extensions`. Keeping the same folder keeps your settings: Chrome ties an unpacked extension's ID, and with it the save folder and the save helper, to where its folder is.
+
+**From source:** clone this repository and choose the cloned folder in step 4. After changing the code, click the reload ↻ icon on Verbatim's card.
 
 ### Save straight to a folder, e.g. your Obsidian vault (optional, recommended)
 
 Install the small save helper once. Chrome hands each capture to it, and it writes the files into the folder you name:
 
 ```bash
-native/install.sh <extension-id> "/path/to/your/vault/Conversation Capture"
+bash native/install.sh <extension-id> "/path/to/your/vault/Verbatim"
 ```
 
-The extension ID is shown on Verbatim's card in `chrome://extensions`. Reload Verbatim afterwards. The helper is a short Python script (`native/verbatim_host.py`) that only accepts messages from your Verbatim install and only writes inside that folder. `native/uninstall.sh` removes it. Without it, captures go to `Downloads/Verbatim`.
+Run it from Terminal inside the Verbatim folder (macOS; the helper needs Python 3, which comes with Apple's command line tools).
+
+The extension ID is shown on Verbatim's card in `chrome://extensions`. Reload Verbatim afterwards. The helper is a short Python script (`native/verbatim_host.py`) that only accepts messages from your Verbatim install and only writes inside that folder. `bash native/uninstall.sh` removes it. Without it, captures go to `Downloads/Verbatim`.
 
 ### Save folder in Options (experimental)
 
@@ -139,6 +150,7 @@ Data flow: **page → adapter (raw capture) → normalize + completeness + enric
 ```bash
 npm install
 npm test
+npm run package   # builds dist/verbatim-<version>.zip for a release
 ```
 
 The tests run the real extension code against simulated pages that reproduce ChatGPT's and Claude's October 2026 page structure, including virtualization and lazy loading. Failure modes must produce `incomplete`, never `verified`: a gap in the sweep, older messages that never load, an unrendered turn, a prompt that won't expand, a hidden view of another chat, messages from another conversation, a still-streaming reply, and a Claude message that never renders.
