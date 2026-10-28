@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verbatim — whole site</title>
+  <style>
+    :root { --ink: #141416; --paper: #f6f2e8; --muted: #6b6a66; --line: #ddd7c8; --green: #16a34a; --amber: #b45309; --red: #b91c1c; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink: #f2efe7; --paper: #18181a; --muted: #a3a09a; --line: #34332f; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 48px 16px; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+    header img { width: 40px; height: 40px; }
+    h1 { font: 600 22px/1.2 Georgia, serif; margin: 0; overflow-wrap: anywhere; }
+    h2 { font-size: 15px; margin: 0 0 4px; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    section { border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    section[hidden], button[hidden], [hidden] { display: none; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
+    button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    label { display: flex; align-items: center; gap: 8px; color: var(--muted); margin-top: 8px; }
+    input[type=number] { font: inherit; width: 96px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); }
+    .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin: 12px 0 8px; }
+    .bar > div { height: 100%; width: 0; background: var(--green); transition: width .2s; }
+    .stats { font-variant-numeric: tabular-nums; }
+    .current { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; min-height: 1.5em; }
+    .status { display: flex; align-items: center; gap: 10px; font-weight: 600; margin-bottom: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--muted); }
+    .dot.ok { background: var(--green); } .dot.warn { background: var(--amber); } .dot.err { background: var(--red); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+    td { padding: 6px 8px 6px 0; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+    td.r { font-weight: 600; white-space: nowrap; }
+    ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+    .error { color: var(--red); }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img src="../../icons/icon128.png" alt="">
+      <h1 id="title">Capture a whole site</h1>
+    </header>
+
+    <section id="intro">
+      <h2>Every page, with its images, videos and files</h2>
+      <p>Verbatim visits each page of <strong id="host">this site</strong> (from its sitemap and by following its links), saves it as Markdown in a folder that mirrors the site, and downloads the images, video files and documents into a shared <strong>media</strong> folder. YouTube and Vimeo players are linked, not downloaded.</p>
+      <p>It stays on this site, follows the site's robots.txt, and reads a few pages at a time. Keep this tab open until it finishes.</p>
+      <label>Up to <input type="number" id="max" min="1" max="20000" value="1000"> pages</label>
+      <label><input type="checkbox" id="video" checked> Download video files (can be large; each file up to 250 MB)</label>
+      <div class="buttons">
+        <button class="primary" id="start">Start</button>
+      </div>
+      <p class="current" id="permissionNote"></p>
+    </section>
+
+    <section id="running" hidden>
+      <h2 id="phase">Starting…</h2>
+      <div class="bar"><div id="bar"></div></div>
+      <div class="stats" id="stats"></div>
+      <div class="current" id="current"></div>
+      <div class="buttons"><button id="stop">Stop and save what's done</button></div>
+    </section>
+
+    <section id="done" hidden>
+      <div class="status"><span class="dot" id="dot"></span><span id="statusLine"></span></div>
+      <p id="where"></p>
+      <div class="buttons" id="saveButtons"></div>
+      <table id="checks"></table>
+      <ul id="notes"></ul>
+    </section>
+  </main>
+  <script src="../vendor/Readability.js"></script>
+  <script src="../core/html-to-markdown.js"></script>
+  <script src="../platforms/web.js"></script>
+  <script src="../core/site.js"></script>
+  <script src="../core/zip.js"></script>
+  <script src="../settings/folder.js"></script>
+  <script src="site.js"></script>
+</body>
+</html>

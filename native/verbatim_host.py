@@ -11,7 +11,10 @@ in its host manifest, and only writes inside the configured folder.
 Protocol: 4-byte little-endian length + UTF-8 JSON, both directions.
   {"type": "ping"}                                   -> {"ok": true, "saveFolder": ...}
   {"type": "save", "files": [{"filename", "text"}]}  -> {"ok": true, "folder", "subfolder"}
+  {"type": "save-tree", "name" | "into", "files": [{"path", "text" | "base64"}]}
+                                                     -> {"ok": true, "folder", "subfolder"}
 """
+import base64
 import json
 import os
 import struct
@@ -70,6 +73,39 @@ def save(files):
     return {"ok": True, "folder": os.path.basename(root), "subfolder": sub}
 
 
+def save_tree(msg):
+    """A whole-site capture, sent in parts: the first message creates the
+    folder ("name"), later ones add to it ("into"). Paths may have
+    subfolders; binary files come as base64."""
+    root = save_folder()
+    if msg.get("into"):
+        sub = safe_part(msg["into"])
+        target = os.path.join(root, sub)
+        if not os.path.isdir(target):
+            raise ValueError("capture folder to add to does not exist")
+    else:
+        base = safe_part(msg["name"])
+        sub, n = base, 2
+        while os.path.exists(os.path.join(root, sub)):
+            sub, n = f"{base} ({n})", n + 1
+        target = os.path.join(root, sub)
+        os.makedirs(target)
+    real_target = os.path.realpath(target)
+    for f in msg["files"]:
+        parts = [safe_part(p) for p in f["path"].split("/")]
+        path = os.path.join(target, *parts)
+        if not os.path.realpath(path).startswith(real_target + os.sep):
+            raise ValueError("refusing to write outside the save folder")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if "base64" in f:
+            with open(path, "wb") as out:
+                out.write(base64.b64decode(f["base64"]))
+        else:
+            with open(path, "w", encoding="utf-8") as out:
+                out.write(f["text"])
+    return {"ok": True, "folder": os.path.basename(root), "subfolder": sub}
+
+
 def main():
     msg = read_message()
     if msg is None:
@@ -79,6 +115,8 @@ def main():
             send({"ok": True, "saveFolder": save_folder()})
         elif msg.get("type") == "save":
             send(save(msg["files"]))
+        elif msg.get("type") == "save-tree":
+            send(save_tree(msg))
         else:
             send({"ok": False, "error": "unknown message type"})
     except Exception as e:  # report every failure back to the extension

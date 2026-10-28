@@ -30,6 +30,15 @@
 
   const words = (s) => (s.match(/\S+/g) || []).length;
 
+  // The page's single <h1>, when its <title> names it too ("Alice & Bob ·
+  // Hardlist"). Sites often repeat one site-wide og:title on every page.
+  function ownHeading(doc) {
+    const h1s = doc.querySelectorAll('h1');
+    if (h1s.length !== 1) return null;
+    const h = (h1s[0].textContent || '').replace(/\s+/g, ' ').trim();
+    return h && h.length <= 200 && (doc.title || '').includes(h) ? h : null;
+  }
+
   async function collect(opts) {
     const doc = opts.document;
     const started = Date.now();
@@ -62,7 +71,7 @@
       }
     }
 
-    const title = (article && article.title) || meta(doc, 'og:title') || doc.title || opts.url;
+    const title = ownHeading(doc) || (article && article.title) || meta(doc, 'og:title') || doc.title || opts.url;
     const description = meta(doc, 'description', 'og:description') || (article && article.excerpt) || null;
     const host = new URL(opts.url).hostname.replace(/^www\./, '');
 

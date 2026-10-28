@@ -57,7 +57,15 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!tabId || sender.id !== chrome.runtime.id) return;
   if (msg.type === 'cc-progress') badge(tabId, `${msg.pct}%`, '#4b5563');
   if (msg.type === 'cc-result') saveResult(tabId, msg.result);
+  if (msg.type === 'cc-site') openSiteCapture(tabId, msg.url);
 });
+
+// "Whole site" opens Verbatim's own tab, which crawls the site, downloads its
+// media, and saves the folder; it lives as long as the tab, unlike this worker.
+function openSiteCapture(fromTabId, url) {
+  badge(fromTabId, '');
+  chrome.tabs.create({ url: chrome.runtime.getURL('src/site/site.html') + '?url=' + encodeURIComponent(url), openerTabId: fromTabId });
+}
 
 const STATUS_BADGE = {
   verified: ['OK', '#047857'],
@@ -67,6 +75,7 @@ const STATUS_BADGE = {
 };
 
 async function saveResult(tabId, result) {
+  if (result && result.site) return badge(tabId, ''); // cancelled, or handed to the site capture tab
   if (!result || result.error) {
     badge(tabId, 'ERR', '#b91c1c');
     await notifyInPage(tabId, 'Verbatim could not export:\n' + ((result && result.error) || 'unknown error').split('\n')[0], 'error');

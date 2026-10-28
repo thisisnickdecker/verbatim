@@ -20,8 +20,36 @@
   ]);
   const ALWAYS_SKIP = new Set([
     'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'SVG', 'BUTTON', 'INPUT', 'TEXTAREA',
-    'SELECT', 'IFRAME', 'CANVAS', 'VIDEO', 'AUDIO',
+    'SELECT', 'CANVAS',
   ]);
+
+  // Cloudflare email obfuscation: the first byte is the key for the rest.
+  function cfEmail(hex) {
+    if (!/^([0-9a-f]{2})+$/i.test(hex || '')) return null;
+    const key = parseInt(hex.slice(0, 2), 16);
+    let out = '';
+    for (let i = 2; i < hex.length; i += 2) out += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16) ^ key);
+    return /^[^@\s]+@[^@\s]+$/.test(out) ? out : null;
+  }
+
+  const BLOCK_SELECTOR = [...BLOCK_TAGS].map((t) => t.toLowerCase()).join(',');
+
+  // YouTube / Vimeo / Loom / Wistia players -> a watchable page URL.
+  function embedUrl(src) {
+    let u;
+    try {
+      u = new URL(src);
+    } catch (_) {
+      return null;
+    }
+    const host = u.hostname.replace(/^www\./, '');
+    let m;
+    if (/^youtube(-nocookie)?\.com$/.test(host) && (m = u.pathname.match(/^\/embed\/([\w-]{6,})/))) return `https://www.youtube.com/watch?v=${m[1]}`;
+    if (host === 'player.vimeo.com' && (m = u.pathname.match(/^\/video\/(\d+)/))) return `https://vimeo.com/${m[1]}`;
+    if (host === 'loom.com' && (m = u.pathname.match(/^\/embed\/(\w+)/))) return `https://www.loom.com/share/${m[1]}`;
+    if (/(^|\.)(wistia\.(com|net)|dailymotion\.com|spotify\.com|soundcloud\.com)$/.test(host)) return u.href;
+    return null;
+  }
 
   // Placeholders so that block separators survive whitespace collapsing.
   const BR = '\u0000BR\u0000';
@@ -89,6 +117,7 @@
       const api = { render: (n) => render(n, ctx), renderChildren: (n, c) => children(n, c || ctx), inline: inlineCode, block, fence, ctx };
       const custom = override(el, api);
       if (custom !== undefined) return custom;
+      if (el.hasAttribute('data-cfemail')) return cfEmail(el.getAttribute('data-cfemail')) || '';
 
       const tag = el.tagName.toUpperCase();
       const base = el.ownerDocument && el.ownerDocument.baseURI;
@@ -122,18 +151,28 @@
           ctx.stats.codeBlocks++;
           return block(fence(code, m ? m[1] : ''));
         }
-        case 'A': {
-          const href = absoluteUrl(el.getAttribute('href'), base);
-          const text = children(el, ctx).trim();
-          if (!href || href.startsWith('javascript:')) return text;
-          ctx.stats.links++;
-          return '[' + (text || href) + '](' + href.replace(/\)/g, '%29') + ')';
-        }
+        case 'A':
+          return link(el, ctx, base);
         case 'IMG': {
           const src = absoluteUrl(el.getAttribute('src'), base);
           if (!src) return '';
           ctx.stats.images.push({ src, alt: el.getAttribute('alt') || '' });
           return '![' + (el.getAttribute('alt') || '').replace(/[[\]]/g, '') + '](' + src + ')';
+        }
+        case 'IFRAME': {
+          // Embedded players become links (they can't be saved as files).
+          const video = embedUrl(absoluteUrl(el.getAttribute('src'), base));
+          if (!video) return '';
+          ctx.stats.embeds.push({ url: video, title: el.getAttribute('title') || '' });
+          return block('[▶ ' + ((el.getAttribute('title') || 'Embedded video').replace(/[[\]]/g, '')) + '](' + video + ')');
+        }
+        case 'VIDEO': case 'AUDIO': {
+          const srcEl = el.getAttribute('src') ? el : el.querySelector('source[src]');
+          const src = srcEl && absoluteUrl(srcEl.getAttribute('src'), base);
+          if (!src || /^(blob|data):/.test(src)) return '';
+          const kind = tag === 'VIDEO' ? 'Video' : 'Audio';
+          ctx.stats.media.push({ src, kind: kind.toLowerCase(), poster: absoluteUrl(el.getAttribute('poster'), base) || null });
+          return block('[▶ ' + kind + '](' + src.replace(/\)/g, '%29') + ')');
         }
         case 'UL': case 'OL':
           return block(list(el, ctx, tag === 'OL'));
@@ -146,15 +185,62 @@
         }
         case 'TABLE':
           return block(table(el, ctx));
+        case 'DL':
+          return block(definitions(el, ctx));
         default:
+          if (el.hasAttribute('href') && (tag === 'DIV' || tag === 'SECTION' || tag === 'SPAN')) return link(el, ctx, base);
           return isBlock(el) ? block(children(el, ctx)) : children(el, ctx);
       }
     }
 
+    // Readability can turn a link into <div href> (when it wraps the
+    // content it keeps); treat that the same way.
+    function link(el, ctx, base) {
+      // Cloudflare hides email addresses behind /cdn-cgi/l/email-protection#<hex>.
+      const cf = (el.getAttribute('href') || '').match(/\/cdn-cgi\/l\/email-protection#([0-9a-f]+)/i);
+      if (cf) {
+        const email = cfEmail(cf[1]);
+        const text = children(el, ctx).trim();
+        return email ? `[${/email.protected/i.test(text) || !text ? email : text}](mailto:${email})` : text;
+      }
+      const href = absoluteUrl(el.getAttribute('href'), base);
+      if (!href || href.startsWith('javascript:')) return children(el, ctx).trim();
+      ctx.stats.links++;
+      const target = '(' + href.replace(/\)/g, '%29') + ')';
+      // A card: a link wrapping blocks (image, heading, text). Keep the
+      // blocks and link the heading, or else the first line of text.
+      if (el.querySelector(BLOCK_SELECTOR)) return block(linkCard(clean(children(el, ctx)), target));
+      const text = children(el, ctx).trim();
+      return '[' + (text || href) + ']' + target;
+    }
+
+    // Sibling inline elements with no space between them render apart on
+    // screen (badges, labels: "Alice & Bob" + "equity"); keep a space.
     function children(el, ctx) {
       let out = '';
-      for (const child of el.childNodes) out += render(child, ctx);
+      let prevEl = false;
+      for (const child of el.childNodes) {
+        const part = render(child, ctx);
+        const isEl = child.nodeType === 1;
+        if (part && isEl && prevEl && !ctx.pre && /[\p{L}\p{N})]$/u.test(out) && /^[\p{L}\p{N}(]/u.test(part) && !isBlock(child)) out += ' ';
+        out += part;
+        if (isEl && part) prevEl = true;
+        else if (child.nodeType === 3 && child.nodeValue.trim()) prevEl = false;
+      }
       return out;
+    }
+
+    function linkCard(md, target) {
+      const lines = md.split('\n');
+      let i = lines.findIndex((l) => /^#{1,6} \S/.test(l));
+      if (i >= 0) {
+        lines[i] = lines[i].replace(/^(#{1,6}) (.*)$/, (m, h, t) => `${h} [${t}]${target}`);
+        return lines.join('\n');
+      }
+      i = lines.findIndex((l) => l.trim() && !/^!\[/.test(l.trim()));
+      if (i < 0) return md + '\n\n[Link]' + target;
+      lines[i] = '[' + lines[i].trim() + ']' + target;
+      return lines.join('\n');
     }
 
     function list(el, ctx, ordered) {
@@ -171,6 +257,25 @@
       // Loose list if any item spans several blocks.
       const loose = items.some((i) => /\n\s*\n/.test(i));
       return items.join(loose ? '\n\n' : '\n');
+    }
+
+    // <dl> -> "- **Term:** definition" (terms may sit in wrapper <div>s).
+    function definitions(el, ctx) {
+      const out = [];
+      let term = null;
+      const one = (n) => flatten(clean(children(n, ctx))).replace(/\n+/g, ' ').trim();
+      for (const n of el.querySelectorAll('dt, dd')) {
+        if (n.closest('dl') !== el) continue;
+        if (n.tagName.toUpperCase() === 'DT') {
+          if (term) out.push(`- **${term}**`);
+          term = one(n);
+        } else {
+          out.push(term ? `- **${term}:** ${one(n)}` : `- ${one(n)}`);
+          term = null;
+        }
+      }
+      if (term) out.push(`- **${term}**`);
+      return out.join('\n');
     }
 
     function table(el, ctx) {
@@ -201,7 +306,7 @@
     }
 
     return function convert(rootEl) {
-      const ctx = { pre: false, stats: { codeBlocks: 0, links: 0, images: [] } };
+      const ctx = { pre: false, stats: { codeBlocks: 0, links: 0, images: [], media: [], embeds: [] } };
       const markdown = clean(render(rootEl, ctx))
         .split('\n')
         .map((l) => (/^\s+$/.test(l) ? '' : l))
@@ -212,5 +317,5 @@
     };
   }
 
-  NS.htmlToMarkdown = { createConverter, fence, inlineCode, block, isBlock };
+  NS.htmlToMarkdown = { createConverter, fence, inlineCode, block, isBlock, embedUrl };
 })(globalThis);

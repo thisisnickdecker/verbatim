@@ -21,7 +21,7 @@
     "tool": "Verbatim",
     "toolVersion": "0.5.0",
     "method": "rendered page, YouTube's own transcript read",
-    "durationMs": 18
+    "durationMs": 17
   },
   "stats": {
     "segments": 40,
@@ -85,7 +85,7 @@
     "lastSegmentSec": 312,
     "durationSec": 330,
     "timestamped": true,
-    "durationMs": 18
+    "durationMs": 17
   },
   "chapters": [
     {

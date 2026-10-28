@@ -73,5 +73,41 @@
     return { folder: handle.name, subfolder: name };
   }
 
-  NS.saveFolder = { getFolder, setFolder, clearFolder, permission, writeFiles };
+  // Write a folder tree: [{ path: 'startups/a.md', text } | { path, bytes }]
+  // into a new subfolder `name` (made unique like writeFiles).
+  async function writeTree(handle, name, files, onProgress) {
+    let sub = name;
+    for (let n = 2; ; n++) {
+      try {
+        await handle.getDirectoryHandle(sub, { create: false });
+        sub = `${name} (${n})`;
+      } catch (_) {
+        break;
+      }
+    }
+    const top = await handle.getDirectoryHandle(sub, { create: true });
+    const dirs = new Map([['', top]]);
+    const dirFor = async (parts) => {
+      let key = '';
+      let dir = top;
+      for (const p of parts) {
+        key += '/' + p;
+        if (!dirs.has(key)) dirs.set(key, await dir.getDirectoryHandle(p, { create: true }));
+        dir = dirs.get(key);
+      }
+      return dir;
+    };
+    for (let i = 0; i < files.length; i++) {
+      const parts = files[i].path.split('/');
+      const dir = await dirFor(parts.slice(0, -1));
+      const fh = await dir.getFileHandle(parts[parts.length - 1], { create: true });
+      const w = await fh.createWritable();
+      await w.write(files[i].bytes || files[i].text || '');
+      await w.close();
+      if (onProgress) onProgress(i + 1, files.length);
+    }
+    return { folder: handle.name, subfolder: sub };
+  }
+
+  NS.saveFolder = { getFolder, setFolder, clearFolder, permission, writeFiles, writeTree };
 })(globalThis);

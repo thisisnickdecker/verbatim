@@ -23,10 +23,14 @@ const SRC = [
   'src/platforms/web.js',
   'src/platforms/registry.js',
   'src/core/exporters.js',
+  'src/core/site.js',
+  'src/core/zip.js',
 ];
 
 // Load the extension source into a jsdom window, as the content scripts run.
 function loadSource(window) {
+  // jsdom lacks TextEncoder (used by the .zip writer); Chrome has it.
+  if (!window.TextEncoder) window.TextEncoder = TextEncoder;
   for (const f of SRC) window.eval(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'));
   return window.ConversationCapture;
 }
