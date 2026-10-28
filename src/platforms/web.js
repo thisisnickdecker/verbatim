@@ -8,7 +8,7 @@
  * site loads only on scroll may be missing (reported as a scope note).
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const CHROME = 'header, nav, footer, aside, form, [role="navigation"], [role="banner"], [role="contentinfo"], [aria-modal="true"], [id*="cookie" i], [class*="cookie" i]';
 

@@ -67,18 +67,18 @@ function createClaudePage(opts) {
     },
   });
   render();
-  return { window, doc, CC: loadSource(window) };
+  return { window, doc, V: loadSource(window) };
 }
 
 async function captureClaude(opts) {
   const page = createClaudePage(opts);
-  const raw = await page.CC.findPlatform(page.window.location.href).collect({
+  const raw = await page.V.findPlatform(page.window.location.href).collect({
     document: page.doc,
     url: page.window.location.href,
     sleep: () => Promise.resolve(),
     timing: { settle: 0, step: 0, renderWait: 0, topTimeout: 5000, maxDuration: 60000 },
   });
-  const conv = page.CC.normalize(raw, { version: 'test', capturedAt: '2026-10-27T18:00:00.000Z' });
+  const conv = page.V.normalize(raw, { version: 'test', capturedAt: '2026-10-27T18:00:00.000Z' });
   return { page, raw, conv };
 }
 

@@ -8,11 +8,11 @@
  * chosen folder, or as one .zip in Downloads/Verbatim.
  */
 (function () {
-  const CC = globalThis.ConversationCapture;
+  const V = globalThis.Verbatim;
   const $ = (id) => document.getElementById(id);
 
   const MAX_MEDIA_BYTES = 250e6;
-  const HELPER = 'com.thestudiolo.verbatim';
+  const HELPER = 'com.nickdecker.verbatim';
   const startUrl = new URL(location.href).searchParams.get('url');
   let stopRequested = false;
 
@@ -67,7 +67,7 @@
         reader.cancel().catch(() => {});
         return { tooLarge: true, size };
       }
-      crc = CC.zip.crc32(value, crc);
+      crc = V.zip.crc32(value, crc);
       chunks.push(value);
     }
     return { ok: true, status: res.status, contentType, blob: new Blob(chunks, { type: contentType }), size, crc };
@@ -154,7 +154,7 @@
     show('running');
     const capturedAt = new Date().toISOString();
     try {
-      const result = await CC.site.crawl({
+      const result = await V.site.crawl({
         start: startUrl,
         maxPages,
         fetchText,
@@ -163,14 +163,14 @@
         isStopped: () => stopRequested,
         onProgress: progress,
       });
-      const media = await CC.site.downloadMedia(result, {
+      const media = await V.site.downloadMedia(result, {
         fetchBinary,
         maxBytes: MAX_MEDIA_BYTES,
         includeVideo,
         isStopped: () => stopRequested,
         onProgress: progress,
       });
-      const out = CC.site.build(result, media, { capturedAt, version: chrome.runtime.getManifest().version });
+      const out = V.site.build(result, media, { capturedAt, version: chrome.runtime.getManifest().version });
       await save(out);
     } catch (err) {
       show('done');
@@ -187,8 +187,8 @@
     progress({ phase: 'save', done: 0, total: 1, text: `${out.files.length.toLocaleString()} files` });
     let where = await saveWithHelper(out).catch(() => null);
     if (!where) {
-      const handle = await CC.saveFolder.getFolder().catch(() => null);
-      if (handle && (await CC.saveFolder.permission(handle)) === 'granted') {
+      const handle = await V.saveFolder.getFolder().catch(() => null);
+      if (handle && (await V.saveFolder.permission(handle)) === 'granted') {
         where = await saveToFolder(handle, out).catch((err) => {
           console.error(err);
           return null;
@@ -210,7 +210,7 @@
 
   async function saveToFolder(handle, out) {
     show('running');
-    const res = await CC.saveFolder.writeTree(handle, out.folder, out.files, (done, total) =>
+    const res = await V.saveFolder.writeTree(handle, out.folder, out.files, (done, total) =>
       progress({ phase: 'save', done, total, text: `${done.toLocaleString()} of ${total.toLocaleString()} files written` }));
     return { label: `“${res.folder}” › ${res.subfolder}` };
   }
@@ -275,7 +275,7 @@
     let first = null;
     let total = 0;
     for (let i = 0; i < groups.length; i++) {
-      const blob = new Blob(CC.zip.zip(groups[i]), { type: 'application/zip' });
+      const blob = new Blob(V.zip.zip(groups[i]), { type: 'application/zip' });
       total += blob.size;
       const name = groups.length > 1 ? `${out.folder} (part ${i + 1} of ${groups.length}).zip` : `${out.folder}.zip`;
       const url = URL.createObjectURL(blob);

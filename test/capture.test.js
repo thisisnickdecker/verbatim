@@ -244,13 +244,13 @@ test('response still streaming -> incomplete', async () => {
 
 test('each URL goes to the right adapter', async () => {
   const { page } = await capture({ turns: simpleTurns(1) });
-  const CC = page.CC;
-  assert.equal(CC.findPlatform('https://chatgpt.com/').id, 'web', 'ChatGPT home is just a page');
-  assert.equal(CC.findPlatform('https://example.com/c/6ae0b249-6f9c').id, 'web');
-  assert.equal(CC.findPlatform('https://chatgpt.com/g/g-p-abc/c/0a1b2c3d-0000-4000-8000-00000000c0de').id, 'chatgpt');
-  assert.equal(CC.findPlatform('https://claude.ai/chat/0a1b2c3d-0000-4000-8000-00000000c0de').id, 'claude');
-  assert.equal(CC.findPlatform('https://claude.ai/recents').id, 'web');
-  assert.equal(CC.findPlatform('chrome://extensions'), null);
+  const V = page.V;
+  assert.equal(V.findPlatform('https://chatgpt.com/').id, 'web', 'ChatGPT home is just a page');
+  assert.equal(V.findPlatform('https://example.com/c/6ae0b249-6f9c').id, 'web');
+  assert.equal(V.findPlatform('https://chatgpt.com/g/g-p-abc/c/0a1b2c3d-0000-4000-8000-00000000c0de').id, 'chatgpt');
+  assert.equal(V.findPlatform('https://claude.ai/chat/0a1b2c3d-0000-4000-8000-00000000c0de').id, 'claude');
+  assert.equal(V.findPlatform('https://claude.ai/recents').id, 'web');
+  assert.equal(V.findPlatform('chrome://extensions'), null);
 });
 
 async function captureMedia(page) {
@@ -261,16 +261,18 @@ test('write example exports', async () => {
   const turns = RICH_TURNS.map((t) => ({ ...t }));
   const { conv, page } = await capture({ turns, title: 'Example: formatting, code and images' });
   const dir = path.join(__dirname, '..', 'examples');
+  // Timings vary run to run; keep the committed examples stable.
+  const write = (name, text) => fs.writeFileSync(path.join(dir, name), text.replace(/"durationMs": \d+/g, '"durationMs": 0'));
   for (const f of fs.readdirSync(dir)) fs.rmSync(path.join(dir, f));
-  for (const f of page.CC.exporters.filesFor(conv)) {
+  for (const f of page.V.exporters.filesFor(conv)) {
     const base = path.basename(f.filename);
     const name = base.endsWith(' — handoff.md') ? 'example-conversation.handoff.md' : 'example-conversation' + path.extname(base);
-    fs.writeFileSync(path.join(dir, name), f.text);
+    write(name, f.text);
   }
   JSON.parse(fs.readFileSync(path.join(dir, 'example-conversation.json'), 'utf8'));
 
   const segments = Array.from({ length: 40 }, (_, i) => ({ start: i * 8, text: i % 3 === 2 ? `That is the point we keep coming back to, number ${i + 1}.` : `and the brief changes again when the client sees part ${i + 1}` }));
   const chapters = [{ start: 0, title: 'Chapter 1: Where the idea came from' }, { start: 160, title: 'Chapter 2: Shipping it' }];
   const yt = await captureMedia(createYouTubePage({ segments, chapters, duration: 330, title: 'Example: a video transcript' }));
-  for (const f of yt.page.CC.exporters.filesFor(yt.tr)) fs.writeFileSync(path.join(dir, 'example-transcript' + path.extname(f.filename)), f.text);
+  for (const f of yt.page.V.exporters.filesFor(yt.tr)) write('example-transcript' + path.extname(f.filename), f.text);
 });

@@ -13,7 +13,7 @@
  * overlapping steps and stitch turns together by their stable turn key.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   // All selectors in one place so DOM changes are a one-file fix.
   const SEL = {
@@ -233,11 +233,9 @@
     let markdown = '';
     let text = '';
     let stats = { codeBlocks: 0, links: 0, images: [] };
-    let contentRoot = null;
     let roots = [];
 
     if (role === 'user') {
-      contentRoot = bubble;
       const target = bubble.querySelector(SEL.userText) || bubble;
       text = (target.innerText !== undefined ? target.innerText : target.textContent).replace(/\r/g, '').trim();
       markdown = text;
@@ -245,7 +243,6 @@
     } else {
       roots = topLevel(unit, SEL.assistantContent);
       if (!roots.length) roots = topLevel(unit, SEL.assistantContentAlt);
-      contentRoot = roots[0] || null;
       const parts = roots.map((r) => convert(r));
       markdown = parts.map((p) => p.markdown).filter(Boolean).join('\n\n');
       for (const p of parts) {

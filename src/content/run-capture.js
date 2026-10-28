@@ -5,7 +5,7 @@
  * background worker, which writes the files.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const PANEL_ID = 'verbatim-capture-panel';
 
@@ -117,7 +117,6 @@
         },
       });
       const capture = NS.normalize(raw, meta);
-      const c = capture.completeness;
       const what = capture.kind === 'page' ? `Page read (${capture.stats.words} words).`
         : capture.kind === 'transcript' ? `Transcript read (${capture.stats.segments} segments).`
         : `${capture.stats.messageCount} messages read.`;

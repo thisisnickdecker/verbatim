@@ -7,7 +7,7 @@
  *
  *   npm run package
  *
- * Uses Verbatim's own .zip writer (src/core/zip.js); no dependencies.
+ * Uses Verbatim's own .zip writer (src/site/zip.js); no dependencies.
  */
 const fs = require('fs');
 const path = require('path');
@@ -18,8 +18,8 @@ const INCLUDE = ['manifest.json', 'src', 'icons', 'native', 'README.md', 'LICENS
 
 const sandbox = { TextEncoder, Uint8Array, Uint32Array, DataView, Date, Error };
 sandbox.globalThis = sandbox;
-vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'src/core/zip.js'), 'utf8'), sandbox);
-const { zip } = sandbox.ConversationCapture.zip;
+vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'src/site/zip.js'), 'utf8'), sandbox);
+const { zip } = sandbox.Verbatim.zip;
 
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));

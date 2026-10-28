@@ -14,7 +14,7 @@
  * completeness is judged by the last timestamp against the video length.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   // All selectors in one place so DOM changes are a one-file fix.
   const SEL = {

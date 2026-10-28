@@ -4,7 +4,7 @@
  * export and the handoff file.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const words = (s) => (String(s || '').match(/\S+/g) || []).length;
   const stripFences = (md) => md.replace(/^(`{3,})[^\n]*\n[\s\S]*?^\1\s*$/gm, '');

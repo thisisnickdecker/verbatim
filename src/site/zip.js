@@ -11,7 +11,7 @@
  * stay in Chrome's blob storage instead of memory.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const TABLE = (() => {
     const t = new Uint32Array(256);

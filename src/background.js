@@ -8,7 +8,7 @@
  */
 importScripts('core/enrich.js', 'core/transcript.js', 'core/exporters.js', 'settings/folder.js');
 
-const CC = globalThis.ConversationCapture;
+const V = globalThis.Verbatim;
 
 // Order matters: shared core first, then platform adapters, then the entry point.
 const CONTENT_FILES = [
@@ -43,7 +43,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: CONTENT_FILES });
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: (meta) => globalThis.ConversationCapture.start(meta),
+      func: (meta) => globalThis.Verbatim.start(meta),
       args: [{ version: chrome.runtime.getManifest().version }],
     });
   } catch (err) {
@@ -82,7 +82,7 @@ async function saveResult(tabId, result) {
     return;
   }
   const capture = result.capture;
-  const files = CC.exporters.filesFor(capture);
+  const files = V.exporters.filesFor(capture);
   let where;
   try {
     where = await saveWithHelper(files);
@@ -102,14 +102,14 @@ async function saveResult(tabId, result) {
   }
   const c = capture.completeness;
   badge(tabId, ...(STATUS_BADGE[c.status] || ['?', '#b45309']));
-  const what = CC.exporters.savedLine(capture);
+  const what = V.exporters.savedLine(capture);
   const tone = c.status === 'verified' || c.status === 'captured' ? 'ok' : c.status === 'unverified' ? 'warn' : 'error';
   await notifyInPage(tabId, `Verbatim — ${c.status.toUpperCase()}\n${what}\n${c.summary}\nSaved to ${where.label}`, tone);
 }
 
 // Save through the optional local helper (native/install.sh), which writes
 // straight into a folder such as an Obsidian vault. Not installed -> skip.
-const HELPER = 'com.thestudiolo.verbatim';
+const HELPER = 'com.nickdecker.verbatim';
 
 function saveWithHelper(files) {
   return new Promise((resolve) => {
@@ -133,18 +133,18 @@ function saveWithHelper(files) {
 async function saveToChosenFolder(files) {
   let handle;
   try {
-    handle = await CC.saveFolder.getFolder();
+    handle = await V.saveFolder.getFolder();
   } catch (_) {
     return { saved: false };
   }
   if (!handle) return { saved: false };
-  if ((await CC.saveFolder.permission(handle)) !== 'granted') {
+  if ((await V.saveFolder.permission(handle)) !== 'granted') {
     // Only a page can ask Chrome for access again, so open Options for a one-click fix.
     chrome.runtime.openOptionsPage();
     return { saved: false, reason: `(“${handle.name}” needs your OK again. Verbatim opened its Options tab: click “Allow access again” and choose “Allow on every visit”.)` };
   }
   try {
-    const out = await CC.saveFolder.writeFiles(handle, files);
+    const out = await V.saveFolder.writeFiles(handle, files);
     return { saved: true, label: `“${out.folder}” › ${out.subfolder}` };
   } catch (err) {
     return { saved: false, reason: `(Couldn't write to “${handle.name}”: ${err.message})` };
@@ -159,6 +159,6 @@ function download(filename, mime, text) {
 
 function notifyInPage(tabId, text, tone) {
   return chrome.scripting
-    .executeScript({ target: { tabId }, func: (t, k) => globalThis.ConversationCapture.showPanel(t, k, 12000), args: [text, tone] })
+    .executeScript({ target: { tabId }, func: (t, k) => globalThis.Verbatim.showPanel(t, k, 12000), args: [text, tone] })
     .catch(() => {});
 }

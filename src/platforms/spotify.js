@@ -12,7 +12,7 @@
  * obfuscates and changes often.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const SEL = {
     title: '[data-testid="episodeTitle"], [data-testid="entityTitle"]',

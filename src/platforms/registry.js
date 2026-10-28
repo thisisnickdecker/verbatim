@@ -6,10 +6,10 @@
  * (fallback: true) handles any other http(s) page.
  *
  * To add a platform, write src/platforms/<id>.js that registers itself on
- * ConversationCapture.platforms and add it to CONTENT_FILES in background.js.
+ * Verbatim.platforms and add it to CONTENT_FILES in background.js.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   NS.findPlatform = function findPlatform(url) {
     const all = Object.values(NS.platforms || {});

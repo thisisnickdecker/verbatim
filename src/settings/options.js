@@ -1,6 +1,6 @@
 /* Verbatim settings page: choose, re-approve, test or clear the save folder. */
 (function () {
-  const F = globalThis.ConversationCapture.saveFolder;
+  const F = globalThis.Verbatim.saveFolder;
   const $ = (id) => document.getElementById(id);
 
   function say(text) {

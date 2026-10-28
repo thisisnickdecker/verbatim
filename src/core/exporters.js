@@ -8,7 +8,7 @@
  *   transcript   -> <title>.md, <title>.json
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const RESULT_ICON = { pass: 'PASS', fail: 'FAIL', unknown: 'UNKNOWN' };
 
@@ -324,6 +324,8 @@
 
   function safeName(s, max) {
     const clean = String(s || 'Untitled')
+      // Characters file systems reject, and control characters.
+      // eslint-disable-next-line no-control-regex
       .replace(/[\\/:*?"<>|#^[\]{}\u0000-\u001f]/g, ' ')
       .replace(/\s+/g, ' ')
       .replace(/^[.\s]+|[.\s]+$/g, '')

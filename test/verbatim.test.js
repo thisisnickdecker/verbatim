@@ -76,7 +76,7 @@ test('claude: a hidden view of another chat is ignored', async () => {
 
 function webPage(html, url) {
   const dom = new JSDOM(html, { url: url || 'https://example.com/journal/grid-systems', runScripts: 'outside-only' });
-  return { window: dom.window, doc: dom.window.document, CC: loadSource(dom.window) };
+  return { window: dom.window, doc: dom.window.document, V: loadSource(dom.window) };
 }
 
 const ARTICLE = `<!doctype html><html lang="en"><head><title>On the Grid | Example Journal</title>
@@ -91,10 +91,10 @@ const ARTICLE = `<!doctype html><html lang="en"><head><title>On the Grid | Examp
   <footer>© Example Journal · <a href="/privacy">Privacy</a></footer></body></html>`;
 
 test('web: article content becomes Markdown without navigation, banners or footer', async () => {
-  const { doc, window, CC } = webPage(ARTICLE);
-  assert.equal(CC.findPlatform(window.location.href).id, 'web');
-  const raw = await CC.platforms.web.collect({ document: doc, url: window.location.href });
-  const page = CC.normalize(raw, { capturedAt: '2026-10-27T18:00:00.000Z' });
+  const { doc, window, V } = webPage(ARTICLE);
+  assert.equal(V.findPlatform(window.location.href).id, 'web');
+  const raw = await V.platforms.web.collect({ document: doc, url: window.location.href });
+  const page = V.normalize(raw, { capturedAt: '2026-10-27T18:00:00.000Z' });
   const md = page.content.markdown;
   assert.equal(page.kind, 'page');
   assert.ok(md.includes('## Part 3'));
@@ -105,14 +105,14 @@ test('web: article content becomes Markdown without navigation, banners or foote
   assert.equal(page.source.byline, 'A. Writer');
   assert.equal(page.source.description, 'A short history of the grid.');
   assert.ok(page.enrichment.outline.some((o) => o.text === 'Part 6'));
-  const out = CC.exporters.toMarkdown(page);
+  const out = V.exporters.toMarkdown(page);
   assert.match(out, /^---\ntitle: /);
   assert.match(out, /kind: "page"/);
 });
 
 test('web: an empty page is reported, not claimed', async () => {
-  const { doc, window, CC } = webPage('<!doctype html><html><head><title>Empty</title></head><body><nav>Menu</nav></body></html>');
-  const page = CC.normalize(await CC.platforms.web.collect({ document: doc, url: window.location.href }));
+  const { doc, window, V } = webPage('<!doctype html><html><head><title>Empty</title></head><body><nav>Menu</nav></body></html>');
+  const page = V.normalize(await V.platforms.web.collect({ document: doc, url: window.location.href }));
   assert.equal(page.completeness.status, 'incomplete');
 });
 
@@ -144,7 +144,7 @@ test('enrichment: outline, word split, questions and links', async () => {
 
 test('handoff: instructions, my words verbatim, condensed replies, last reply in full', async () => {
   const { conv, page } = await capture({ turns: ENRICH_TURNS, title: 'Grids' });
-  const h = page.CC.exporters.toHandoff(conv);
+  const h = page.V.exporters.toHandoff(conv);
   assert.match(h, /## Instructions for the assistant/);
   assert.ok(h.includes(ENRICH_TURNS[0].user.text), 'user text is verbatim');
   assert.match(h, /### 2\. ChatGPT \(condensed from \d+ words\)/);
@@ -157,7 +157,7 @@ test('handoff: instructions, my words verbatim, condensed replies, last reply in
 
 test('files: local-time folder, title-based names, three files per conversation', async () => {
   const { conv, page } = await capture({ turns: simpleTurns(1), title: 'Spreadsheet: Art/Books?' });
-  const files = page.CC.exporters.filesFor(conv);
+  const files = page.V.exporters.filesFor(conv);
   assert.equal(files.length, 3);
   const d = new Date('2026-10-27T18:00:00.000Z');
   const p = (n) => String(n).padStart(2, '0');
@@ -196,8 +196,8 @@ function memoryFolder(name) {
 test('save folder: files land in a dated subfolder, never overwriting', async () => {
   const { conv, page } = await capture({ turns: simpleTurns(1), title: 'Folder test' });
   page.window.eval(require('fs').readFileSync(require('path').join(__dirname, '..', 'src/settings/folder.js'), 'utf8'));
-  const F = page.CC.saveFolder;
-  const files = page.CC.exporters.filesFor(conv);
+  const F = page.V.saveFolder;
+  const files = page.V.exporters.filesFor(conv);
   const vault = memoryFolder('Conversation Capture');
 
   const first = await F.writeFiles(vault, files);
@@ -268,7 +268,7 @@ test('youtube: opens "Show transcript", reads every segment, chapters and metada
   assert.deepEqual(plain(tr.chapters.map((c) => c.start)), [0, 1800]);
   assert.equal(tr.completeness.status, 'verified');
 
-  const md = page.CC.exporters.toMarkdown(tr);
+  const md = page.V.exporters.toMarkdown(tr);
   assert.match(md, /^---\ntitle: "Alli Peters/);
   assert.match(md, /channel: "The Creative Caucus"/);
   assert.match(md, /duration: "1:00:00"/);
@@ -276,17 +276,17 @@ test('youtube: opens "Show transcript", reads every segment, chapters and metada
   assert.match(md, /### Chapter 2: The rebrand\n\n\*\*\[30:00\]\(https:\/\/www\.youtube\.com\/watch\?v=FquRuBqglg4&t=1800s\)\*\* line 201/);
   assert.match(md, /## Links in the description\n\n- \[https:\/\/example\.com\/notes\]/);
   // Paragraphs, not one line per caption.
-  const paras = page.CC.exporters.paragraphs(tr);
+  const paras = page.V.exporters.paragraphs(tr);
   assert.ok(paras.length > 30 && paras.length < 100, `${paras.length} paragraphs`);
   assert.ok(paras.every((p) => p.count >= 1));
 
-  const files = page.CC.exporters.filesFor(tr);
+  const files = page.V.exporters.filesFor(tr);
   assert.deepEqual(plain(files.map((f) => f.filename.split('/').pop())), [
     'Alli Peters Dragging the Democrats Into a New Creative Era.md',
     'Alli Peters Dragging the Democrats Into a New Creative Era.json',
   ]);
   assert.match(files[0].filename, /^Verbatim\/\d{4}-\d\d-\d\d \d\d-\d\d YouTube — /);
-  assert.equal(page.CC.exporters.savedLine(tr), `Transcript saved (${tr.stats.words.toLocaleString('en-US')} words, 400 segments).`);
+  assert.equal(page.V.exporters.savedLine(tr), `Transcript saved (${tr.stats.words.toLocaleString('en-US')} words, 400 segments).`);
 });
 
 test('youtube: the older transcript panel layout is read too', async () => {
@@ -312,7 +312,7 @@ test('youtube: no transcript is reported, not claimed', async () => {
   assert.equal(tr.stats.segments, 0);
   assert.equal(tr.completeness.checks[0].result, 'fail');
   assert.equal(tr.completeness.status, 'incomplete');
-  assert.match(page.CC.exporters.toMarkdown(tr), /_\(no transcript captured\)_/);
+  assert.match(page.V.exporters.toMarkdown(tr), /_\(no transcript captured\)_/);
 });
 
 test('youtube: the page showing another video is caught', async () => {
@@ -333,7 +333,7 @@ test('spotify: reads the Transcript section under its heading, with show and des
   assert.equal(tr.source.url, 'https://open.spotify.com/episode/5H3FXUgGf9hxqb6ZN2mjxu');
   assert.match(tr.source.description, /next Steve Jobs/);
   assert.equal(tr.completeness.status, 'verified');
-  const md = page.CC.exporters.toMarkdown(tr);
+  const md = page.V.exporters.toMarkdown(tr);
   assert.match(md, /show: "New Creative Era"/);
   assert.match(md, /\*\*0:00\*\* line 1 keeps going and/);
   assert.ok(!md.includes('Show more'));
@@ -358,7 +358,7 @@ test('spotify: tabbed layout: opens the Transcript tab, keeps speakers and every
   assert.ok(!tr.segments.some((s) => /generated automatically/.test(s.text)));
   assert.equal(tr.completeness.status, 'verified');
   assert.match(tr.completeness.warnings.join(' '), /Speaker labels are Spotify's guesses/);
-  const md = page.CC.exporters.toMarkdown(tr);
+  const md = page.V.exporters.toMarkdown(tr);
   assert.match(md, /\*\*0:00 Speaker 1:\*\* Welcome to new creative era\./);
   assert.match(md, /\*\*0:21 Speaker 2:\*\* Good to be here\./);
   assert.match(md, /\*\*1:03:50 Speaker 1:\*\* Thanks for listening\./);
@@ -379,15 +379,15 @@ test('spotify: signed out (no transcript) says why', async () => {
 });
 
 test('transcripts: each URL goes to the right adapter', () => {
-  const { CC } = createSpotifyPage({});
-  assert.equal(CC.findPlatform('https://www.youtube.com/watch?v=FquRuBqglg4&pp=x').id, 'youtube');
-  assert.equal(CC.findPlatform('https://m.youtube.com/watch?v=FquRuBqglg4').id, 'youtube');
-  assert.equal(CC.findPlatform('https://www.youtube.com/live/FquRuBqglg4').id, 'youtube');
-  assert.equal(CC.findPlatform('https://www.youtube.com/results?search_query=x').id, 'web');
-  assert.equal(CC.findPlatform('https://open.spotify.com/episode/5H3FXUgGf9hxqb6ZN2mjxu?si=a2c').id, 'spotify');
-  assert.equal(CC.findPlatform('https://open.spotify.com/intl-de/episode/5H3FXUgGf9hxqb6ZN2mjxu').id, 'spotify');
-  assert.equal(CC.findPlatform('https://open.spotify.com/show/5H3FXUgGf9hxqb6ZN2mjxu').id, 'web');
-  assert.equal(CC.transcript.clock(3725), '1:02:05');
-  assert.equal(CC.transcript.parseClock('1:02:05'), 3725);
-  assert.equal(CC.transcript.parseIsoDuration('PT58M53S'), 3533);
+  const { V } = createSpotifyPage({});
+  assert.equal(V.findPlatform('https://www.youtube.com/watch?v=FquRuBqglg4&pp=x').id, 'youtube');
+  assert.equal(V.findPlatform('https://m.youtube.com/watch?v=FquRuBqglg4').id, 'youtube');
+  assert.equal(V.findPlatform('https://www.youtube.com/live/FquRuBqglg4').id, 'youtube');
+  assert.equal(V.findPlatform('https://www.youtube.com/results?search_query=x').id, 'web');
+  assert.equal(V.findPlatform('https://open.spotify.com/episode/5H3FXUgGf9hxqb6ZN2mjxu?si=a2c').id, 'spotify');
+  assert.equal(V.findPlatform('https://open.spotify.com/intl-de/episode/5H3FXUgGf9hxqb6ZN2mjxu').id, 'spotify');
+  assert.equal(V.findPlatform('https://open.spotify.com/show/5H3FXUgGf9hxqb6ZN2mjxu').id, 'web');
+  assert.equal(V.transcript.clock(3725), '1:02:05');
+  assert.equal(V.transcript.parseClock('1:02:05'), 3725);
+  assert.equal(V.transcript.parseIsoDuration('PT58M53S'), 3533);
 });

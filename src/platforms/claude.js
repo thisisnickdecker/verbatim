@@ -10,7 +10,7 @@
  * check that every index from 0 to TOTAL-1 was read.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   // All selectors in one place so DOM changes are a one-file fix.
   const SEL = {

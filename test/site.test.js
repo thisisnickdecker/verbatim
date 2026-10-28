@@ -69,12 +69,12 @@ function setup() {
 }
 
 async function capture(site, opts) {
-  const CC = setup();
-  const result = await CC.site.crawl({ start: `${ORIGIN}/?utm_source=x`, delayMs: 0, sleep: (ms) => new Promise((r) => setTimeout(r, ms)), ...site, ...opts });
-  const media = await CC.site.downloadMedia(result, { ...site, maxBytes: 1e6 });
-  const out = CC.site.build(result, media, { capturedAt: '2026-10-28T18:00:00.000Z', version: '0.6.0' });
+  const V = setup();
+  const result = await V.site.crawl({ start: `${ORIGIN}/?utm_source=x`, delayMs: 0, sleep: (ms) => new Promise((r) => setTimeout(r, ms)), ...site, ...opts });
+  const media = await V.site.downloadMedia(result, { ...site, maxBytes: 1e6 });
+  const out = V.site.build(result, media, { capturedAt: '2026-10-28T18:00:00.000Z', version: '0.6.0' });
   const file = (p) => out.files.find((f) => f.path === p);
-  return { CC, result, media, out, file };
+  return { V, result, media, out, file };
 }
 
 test('site: crawls the sitemap and links, follows robots.txt, mirrors paths', async () => {
@@ -221,9 +221,9 @@ function hasUnzip() {
 
 test('page: This page / Whole site choice', async () => {
   const dom = new JSDOM('<!doctype html><html><body><p>Hi</p></body></html>', { url: 'https://www.example.org/', runScripts: 'outside-only' });
-  const CC = loadSource(dom.window);
+  const V = loadSource(dom.window);
   dom.window.eval(fs.readFileSync(path.join(__dirname, '..', 'src/content/run-capture.js'), 'utf8'));
-  const choice = CC.chooseScope();
+  const choice = V.chooseScope();
   const buttons = [...dom.window.document.querySelectorAll('#verbatim-capture-panel-choice button')];
   assert.deepEqual(buttons.map((b) => b.textContent.split('Every')[0].split('The text')[0]), ['This page', 'Whole site', 'Cancel']);
   assert.match(buttons[1].textContent, /Every page on example\.org/);
@@ -233,9 +233,9 @@ test('page: This page / Whole site choice', async () => {
 });
 
 test('page: a card link Readability turned into <div href> stays a link', () => {
-  const CC = setup();
+  const V = setup();
   const doc = new JSDOM('<div id="r"><div href="https://x.org/startups/acme"><div><p><img src="https://x.org/a.png" alt=""></p></div><div><h3><span>Acme</span><span>equity</span></h3><p>Rockets.</p></div></div></div>', { url: 'https://x.org/' }).window.document;
-  const md = CC.htmlToMarkdown.createConverter()(doc.getElementById('r')).markdown;
+  const md = V.htmlToMarkdown.createConverter()(doc.getElementById('r')).markdown;
   assert.match(md, /### \[Acme equity\]\(https:\/\/x\.org\/startups\/acme\)/);
   assert.match(md, /^Rockets\.$/m);
 });
@@ -292,8 +292,8 @@ test('media: falls back to the resized copy; video files can be turned off', asy
   site.fetchText = async (url) => (url.endsWith('/robots.txt') ? '' : Promise.reject(new Error('404')));
   const fetchBinary = async (url) => (url === 'https://img.example.imgix.net/a.jpg?w=300' ? { ok: true, status: 200, contentType: 'image/jpeg', bytes: new Uint8Array([1]) } : { ok: false, status: 403 });
   const { media, out } = await capture({ ...site, fetchBinary }, { start: 'https://www.example.org/p', maxPages: 1 });
-  const CC = setup();
-  const media2 = await CC.site.downloadMedia({ pages: [{ media: [{ url: 'https://www.example.org/media/launch.mp4', kind: 'video', aliases: [] }] }] }, { fetchBinary, includeVideo: false });
+  const V = setup();
+  const media2 = await V.site.downloadMedia({ pages: [{ media: [{ url: 'https://www.example.org/media/launch.mp4', kind: 'video', aliases: [] }] }] }, { fetchBinary, includeVideo: false });
   assert.equal(media.get('https://img.example.imgix.net/a.jpg').status, 'saved'); // the original 403'd; the copy saved
   assert.equal(media2.get('https://www.example.org/media/launch.mp4').status, 'skipped');
   assert.ok(out.files.some((f) => /^media\/a-\w+\.jpg$/.test(f.path)));
@@ -313,9 +313,9 @@ test('zip: Blob entries with a CRC worked out in pieces', { skip: !hasUnzip() },
 });
 
 test('page: Cloudflare-protected emails are decoded; /cdn-cgi/ is not crawled', async () => {
-  const CC = setup();
+  const V = setup();
   const doc = new JSDOM('<div id="r"><p>Write to <a href="/cdn-cgi/l/email-protection#422a272e2e2d02273a232f322e276c2d3025">[email&#160;protected]</a> or <span class="__cf_email__" data-cfemail="5a323f3636351a3f223b372a363f7435283d">[email&#160;protected]</span>.</p></div>', { url: 'https://x.org/' }).window.document;
-  const md = CC.htmlToMarkdown.createConverter()(doc.getElementById('r')).markdown;
+  const md = V.htmlToMarkdown.createConverter()(doc.getElementById('r')).markdown;
   assert.equal(md, 'Write to [hello@example.org](mailto:hello@example.org) or hello@example.org.');
   const site = fakeSite({ '/contact': page('Contact', '<p>Contact us by email, any time, about anything at all that you would like to ask.</p><a href="/cdn-cgi/l/email-protection#bbd5d2">x</a>') });
   site.fetchText = async () => Promise.reject(new Error('404'));

@@ -66,7 +66,7 @@ function createYouTubePage(opts) {
       }, 5);
     });
   }
-  return { window, doc, CC: loadSource(window) };
+  return { window, doc, V: loadSource(window) };
 }
 
 function createSpotifyPage(opts) {
@@ -109,20 +109,20 @@ function createSpotifyPage(opts) {
       }, 5);
     });
   }
-  return { window: dom.window, doc, CC: loadSource(dom.window) };
+  return { window: dom.window, doc, V: loadSource(dom.window) };
 }
 
 const FAST = { poll: 1, stableFor: 2, timeout: 2000 };
 
 async function captureMedia(page) {
-  const platform = page.CC.findPlatform(page.window.location.href);
+  const platform = page.V.findPlatform(page.window.location.href);
   const raw = await platform.collect({
     document: page.doc,
     url: page.window.location.href,
     sleep: (ms) => new Promise((r) => page.window.setTimeout(r, ms)),
     timing: FAST,
   });
-  const tr = page.CC.normalize(raw, { version: '0.5.0', capturedAt: '2026-10-28T18:00:00.000Z' });
+  const tr = page.V.normalize(raw, { version: require('../manifest.json').version, capturedAt: '2026-10-28T18:00:00.000Z' });
   return { raw, tr, platform };
 }
 

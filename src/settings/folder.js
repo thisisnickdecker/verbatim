@@ -10,7 +10,7 @@
  * Shared by the settings page and the background service worker.
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const DB = 'verbatim-settings';
   const STORE = 'kv';

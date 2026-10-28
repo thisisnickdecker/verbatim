@@ -23,9 +23,9 @@ import json, sys
 json.dump({"saveFolder": sys.argv[1]}, open(sys.argv[2], "w"), indent=2)
 EOF
 
-cat > "$MANIFESTS/com.thestudiolo.verbatim.json" <<EOF
+cat > "$MANIFESTS/com.nickdecker.verbatim.json" <<EOF
 {
-  "name": "com.thestudiolo.verbatim",
+  "name": "com.nickdecker.verbatim",
   "description": "Verbatim save helper",
   "path": "$HOST",
   "type": "stdio",

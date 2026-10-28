@@ -13,7 +13,7 @@
  *   transcripts: see core/transcript.js
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const SCHEMA = 'verbatim/v1';
   const ROLE_MAP = { user: 'user', human: 'user', assistant: 'assistant', model: 'assistant', system: 'system', tool: 'tool' };

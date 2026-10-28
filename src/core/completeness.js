@@ -8,7 +8,7 @@
  *   "incomplete" at least one required check failed (content is known to be missing)
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   function check(id, label, result, detail, required) {
     return { id, label, result, detail, required: required !== false };

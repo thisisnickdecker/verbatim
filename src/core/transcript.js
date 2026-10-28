@@ -12,7 +12,7 @@
  * start values are seconds (or null when the page shows no timestamps).
  */
 (function (root) {
-  const NS = (root.ConversationCapture = root.ConversationCapture || {});
+  const NS = (root.Verbatim = root.Verbatim || {});
 
   const CLOCK = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})$/;
 
@@ -65,7 +65,7 @@
     }
   }
 
-  const cleanText = (s) => String(s || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const cleanText = (s) => String(s || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 
   NS.transcript = { parseClock, parseIsoDuration, clock, settle, waitFor, cleanText };
 })(globalThis);

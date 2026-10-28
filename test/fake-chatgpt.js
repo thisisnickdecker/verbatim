@@ -23,8 +23,10 @@ const SRC = [
   'src/platforms/web.js',
   'src/platforms/registry.js',
   'src/core/exporters.js',
-  'src/core/site.js',
-  'src/core/zip.js',
+  'src/site/media.js',
+  'src/site/crawl.js',
+  'src/site/output.js',
+  'src/site/zip.js',
 ];
 
 // Load the extension source into a jsdom window, as the content scripts run.
@@ -32,7 +34,7 @@ function loadSource(window) {
   // jsdom lacks TextEncoder (used by the .zip writer); Chrome has it.
   if (!window.TextEncoder) window.TextEncoder = TextEncoder;
   for (const f of SRC) window.eval(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'));
-  return window.ConversationCapture;
+  return window.Verbatim;
 }
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -181,20 +183,20 @@ function createPage(opts) {
   });
 
   render();
-  return { window, doc, sleep, CC: loadSource(window) };
+  return { window, doc, sleep, V: loadSource(window) };
 }
 
 async function capture(opts) {
   const page = createPage(opts);
-  const platform = page.CC.findPlatform(page.window.location.href);
+  const platform = page.V.findPlatform(page.window.location.href);
   const raw = await platform.collect({
     document: page.doc,
     url: page.window.location.href,
     sleep: page.sleep,
     timing: { expandWait: 0, settle: 0, step: 0, renderWait: 0, topTimeout: opts.topTimeout || 5000, maxDuration: 60000 },
   });
-  const conv = page.CC.normalize(raw, { version: '0.1.0', capturedAt: '2026-10-27T18:00:00.000Z' });
-  return { page, raw, conv, md: page.CC.exporters.toMarkdown(conv), json: page.CC.exporters.toJSON(conv) };
+  const conv = page.V.normalize(raw, { version: require('../manifest.json').version, capturedAt: '2026-10-27T18:00:00.000Z' });
+  return { page, raw, conv, md: page.V.exporters.toMarkdown(conv), json: page.V.exporters.toJSON(conv) };
 }
 
 function simpleTurns(n, prefix) {
