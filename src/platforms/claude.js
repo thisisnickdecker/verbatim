@@ -19,6 +19,8 @@
     row: '[data-testid="transcript-row"]',
     article: '[role="article"]',
     userMessage: '[data-testid="user-message"]',
+    // Rows also say who sent them; attachment-only user messages have no user-message element.
+    userScope: '[data-user-scope]',
     assistantMessage: '[data-testid="assistant-message"]',
     markdown: '.standard-markdown, .progressive-markdown',
     collapsed: '[data-closed]', // thinking / tool-use blocks shown as a one-line summary
@@ -74,17 +76,20 @@
     const index = Number(row.getAttribute('data-index'));
     const user = row.querySelector(SEL.userMessage);
     const assistant = row.querySelector(SEL.assistantMessage);
-    const role = user ? 'user' : assistant ? 'assistant' : 'unknown';
+    const sender = row.getAttribute('data-perf-row');
+    const isUser = !!user || sender === 'human' || (!assistant && !!row.querySelector(SEL.userScope));
+    const role = isUser ? 'user' : assistant || sender === 'assistant' ? 'assistant' : 'unknown';
     const flags = [];
     const attachments = [];
     let markdown = '';
     let text = '';
     let codeBlocks = 0;
 
-    if (user) {
-      const out = convert(user);
-      markdown = out.markdown;
-      text = (user.innerText !== undefined ? user.innerText : user.textContent).trim();
+    if (isUser) {
+      if (user) {
+        markdown = convert(user).markdown;
+        text = (user.innerText !== undefined ? user.innerText : user.textContent).trim();
+      }
       for (const t of row.querySelectorAll(SEL.fileThumb)) {
         const img = t.querySelector('img');
         const name = fileName(t);

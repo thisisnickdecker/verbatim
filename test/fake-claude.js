@@ -15,8 +15,8 @@ function rowHtml(m, i, total) {
   const tail = `</div></div></div></div>`;
   if (m.role === 'user') {
     const files = (m.files || []).map((f) => `<div data-testid="file-thumbnail"><span role="button" aria-label="${esc(f)}"></span><div>${esc(f)}</div></div>`).join('');
-    return `${head}<h3 data-find-omitted="">You said: ${esc(m.text.slice(0, 20))}</h3><div data-user-scope=""><div>${files}</div>
-      <div data-testid="user-message">${m.text.split('\n\n').map((p) => `<p>${esc(p)}</p>`).join('')}</div>
+    return `${head}<h3 data-find-omitted="">You said: ${esc((m.text || '').slice(0, 20))}</h3><div data-user-scope=""><div>${files}</div>
+      ${m.text ? `<div data-testid="user-message">${m.text.split('\n\n').map((p) => `<p>${esc(p)}</p>`).join('')}</div>` : ''}
       <div data-testid="user-message-actions"><button aria-label="Edit"></button></div></div>${tail}`;
   }
   const thinking = m.thinking ? `<div data-closed="" data-state="closed"><span role="status">${esc(m.thinking)}</span><div class="standard-markdown"><p>HIDDEN REASONING</p></div></div>` : '';

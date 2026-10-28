@@ -45,6 +45,19 @@ test('claude: thinking is excluded, files and artifacts are listed', async () =>
   assert.deepEqual(plain(a.attachments), [{ type: 'file', name: 'Spec', note: 'artifact (content not captured)' }]);
 });
 
+test('claude: a message that is only an attachment is still yours', async () => {
+  const messages = [
+    { role: 'user', text: 'Read this.' },
+    { role: 'assistant', html: '<p>Send it over.</p>' },
+    { role: 'user', text: '', files: ['Pasted text.txt'] },
+    { role: 'assistant', html: '<p>Got it.</p>' },
+  ];
+  const { conv } = await captureClaude({ messages });
+  assert.equal(conv.messages[2].role, 'user');
+  assert.deepEqual(plain(conv.messages[2].attachments), [{ type: 'file', name: 'Pasted text.txt' }]);
+  assert.equal(conv.completeness.status, 'verified');
+});
+
 test('claude: a message that never renders -> incomplete via the count check', async () => {
   const { conv } = await captureClaude({ messages: claudeMessages(6), dropIndex: 5 });
   const check = conv.completeness.checks.find((c) => c.id === 'count_matches');

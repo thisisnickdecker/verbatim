@@ -1,6 +1,6 @@
 {
   "name": "verbatim",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "scripts": {
     "test": "node --test test/capture.test.js test/verbatim.test.js"
   },
